@@ -50,8 +50,8 @@
       "label": "Test User",
       "isPermanent": true,
       "createdAt": 1776938122237,
-      "updatedAt": 1776942108093,
-      "lastOpenedAt": 1776942108093
+      "updatedAt": 1776943266728,
+      "lastOpenedAt": 1776943266728
     },
     {
       "roomId": "7A15CD",
@@ -59,8 +59,8 @@
       "label": "a",
       "isPermanent": true,
       "createdAt": 1776938122238,
-      "updatedAt": 1776942406975,
-      "lastOpenedAt": 1776942406975
+      "updatedAt": 1776943266729,
+      "lastOpenedAt": 1776943266729
     }
   ],
   "roomSnapshots": [
