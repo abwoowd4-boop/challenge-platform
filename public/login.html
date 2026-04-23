@@ -10,13 +10,12 @@ function normalizeRoom(v=''){return String(v||'').trim().toUpperCase().replace(/
 function authHeaders(){const t=localStorage.getItem(tokenKey)||'';return t?{'Authorization':'Bearer '+t}:{}}
 const redirectTarget=(new URLSearchParams(location.search).get('redirect')||sessionStorage.getItem('challenge_after_login_redirect')||'').trim();
 function safeRedirect(userRoom=''){
-  if(!redirectTarget){
-    return userRoom ? ('/?room='+encodeURIComponent(userRoom)) : '/dashboard';
-  }
-  if(redirectTarget.startsWith('/host')||redirectTarget.startsWith('/team-settings')||redirectTarget.startsWith('/games')){
+  if(!redirectTarget) return '/dashboard';
+  if(redirectTarget.startsWith('/dashboard')||redirectTarget.startsWith('/activate')) return redirectTarget;
+  if(redirectTarget.startsWith('/host')||redirectTarget.startsWith('/team-settings')||redirectTarget.startsWith('/games')||redirectTarget==='/'||redirectTarget.startsWith('/player')){
     try {
       const u=new URL(redirectTarget, location.origin);
-      if(userRoom) u.searchParams.set('room', userRoom);
+      if(userRoom && (u.pathname==='/'||u.pathname==='/player'||u.pathname==='/host'||u.pathname==='/team-settings'||u.pathname==='/games'||/\/games\/.+\/(host|setup|player|screen)$/.test(u.pathname))) u.searchParams.set('room', userRoom);
       return u.pathname + u.search + u.hash;
     } catch(e){
       if(!userRoom) return redirectTarget;
@@ -24,7 +23,7 @@ function safeRedirect(userRoom=''){
       return redirectTarget + sep + 'room=' + encodeURIComponent(userRoom);
     }
   }
-  return userRoom ? ('/?room='+encodeURIComponent(userRoom)) : '/dashboard';
+  return '/dashboard';
 }
 function goAfterLogin(userRoom=''){ sessionStorage.removeItem('challenge_after_login_redirect'); if(userRoom) localStorage.setItem('challenge_last_room', userRoom); location.href = safeRedirect(userRoom); }
 async function check(){const t=localStorage.getItem(tokenKey); if(!t) return; try{const res=await fetch('/api/auth/me',{headers:authHeaders()}); if(res.ok){const data=await res.json(); const room=normalizeRoom(data?.user?.roomId||''); goAfterLogin(room);} else {localStorage.removeItem(tokenKey);}}catch(e){localStorage.removeItem(tokenKey);}}

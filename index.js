@@ -648,7 +648,8 @@ function defaultLettersState(size=5){
     timerMaxSeconds:0,
     currentAnswerTeam:'',
     waitingTeam:'',
-    noticeText:'بانتظار بداية اللعبة'
+    noticeText:'بانتظار بداية اللعبة',
+    presentedQuestion:null
   };
 }
 
@@ -1241,14 +1242,64 @@ function setLettersPhase(phase,statusText=''){
   state.app.currentView=phase==='finished'?'game_results':'game_running';
   state.app.statusText=letters.statusText;
 }
+let lettersPresentedQuestionTimeout=null;
 function setLettersCurrentLetter(letter=''){
   const letters=getLetters();
+  if(letters.phase!=='running' || letters.winnerTeam) return;
   letters.currentLetter=String(letter||'').trim().slice(0,1);
   emitState();
+}
+function presentLettersQuestion(payload={}){
+  const letters=getLetters();
+  const question=String(payload.question||'').trim();
+  if(!question) return {ok:false,message:'السؤال فارغ'};
+  if(lettersPresentedQuestionTimeout){ clearTimeout(lettersPresentedQuestionTimeout); lettersPresentedQuestionTimeout=null; }
+  letters.presentedQuestion={
+    letter:String(payload.letter||'').trim().slice(0,1),
+    index:Number.isFinite(Number(payload.index)) ? Number(payload.index) : -1,
+    question,
+    answer:String(payload.answer||'').trim(),
+    showAnswer:false,
+    shownAt:Date.now(),
+    answerShownAt:null,
+    autoHideAt:null
+  };
+  emitState();
+  return {ok:true};
+}
+function showPresentedLettersAnswer(durationMs=5000){
+  const letters=getLetters();
+  if(!letters.presentedQuestion) return {ok:false,message:'لا يوجد سؤال معروض'};
+  const duration=Math.max(1000, Math.min(15000, Number(durationMs)||5000));
+  if(lettersPresentedQuestionTimeout){ clearTimeout(lettersPresentedQuestionTimeout); lettersPresentedQuestionTimeout=null; }
+  letters.presentedQuestion={
+    ...letters.presentedQuestion,
+    showAnswer:true,
+    answerShownAt:Date.now(),
+    autoHideAt:Date.now()+duration
+  };
+  emitState();
+  lettersPresentedQuestionTimeout=setTimeout(()=>{
+    const current=getLetters().presentedQuestion;
+    if(current && current.showAnswer){
+      getLetters().presentedQuestion=null;
+      lettersPresentedQuestionTimeout=null;
+      emitState();
+    }
+  }, duration);
+  return {ok:true};
+}
+function clearPresentedLettersQuestion(){
+  const letters=getLetters();
+  if(lettersPresentedQuestionTimeout){ clearTimeout(lettersPresentedQuestionTimeout); lettersPresentedQuestionTimeout=null; }
+  letters.presentedQuestion=null;
+  emitState();
+  return {ok:true};
 }
 function startLettersGame(){
   const letters=getLetters();
   clearLettersTimer();
+  if(lettersPresentedQuestionTimeout){ clearTimeout(lettersPresentedQuestionTimeout); lettersPresentedQuestionTimeout=null; }
   const size=Math.max(3, Math.min(5, Number(letters.gridSize)||3));
   letters.started=true;
   letters.gridSize=size;
@@ -1266,6 +1317,7 @@ function startLettersGame(){
   letters.moveCount=0;
   letters.currentLetter='';
   letters.noticeText='الزر مفتوح للجميع';
+  letters.presentedQuestion=null;
   setLettersPhase('running','بدأت لعبة الحروف');
   emitState();
 }
@@ -1765,12 +1817,15 @@ socket.on('lettersPrime',()=>{state.app.selectedGame='letters'; state.app.select
   socket.on('lettersUpdateConfig',(config={})=>{updateLettersSettings(config); emitState();});
   socket.on('lettersStart',()=>{startLettersGame();});
   socket.on('lettersSetCurrentLetter',({letter}={})=>{setLettersCurrentLetter(letter);});
+  socket.on('lettersPresentQuestion',(payload={})=>{presentLettersQuestion(payload);});
+  socket.on('lettersShowQuestionAnswer',({durationMs}={})=>{showPresentedLettersAnswer(durationMs);});
+  socket.on('lettersClearPresentedQuestion',()=>{clearPresentedLettersQuestion();});
   socket.on('lettersBuzz',({playerId}={})=>{const result=lettersBuzz(playerId); if(result.ok) socket.emit('lettersBuzzAccepted'); else socket.emit('lettersBuzzRejected',{message:result.message});});
   socket.on('lettersClearResponder',()=>{clearLettersResponder();});
   socket.on('lettersMarkWrong',()=>{const result=markLettersWrong(); if(!result.ok) socket.emit('lettersClaimRejected',{message:result.message});});
   socket.on('lettersClaimCell',(payload={})=>{const result=claimLettersCell(payload); if(!result.ok) socket.emit('lettersClaimRejected',{message:result.message});});
   socket.on('lettersAdjustCellOwner',(payload={})=>{const result=adjustLettersCellOwner(payload); if(!result.ok) socket.emit('lettersClaimRejected',{message:result.message});});
-  socket.on('lettersReset',()=>{resetScores(); resetPlayersGameData(); resetLettersGame(); state.app.selectedGame='letters'; state.app.selectedGameLabel='لعبة الحروف'; state.app.currentView='game_selected'; state.app.statusText='تم تصفير لعبة الحروف'; io.to(roomCode).emit('gameEnded'); emitState();});
+  socket.on('lettersReset',()=>{resetScores(); resetPlayersGameData(); resetLettersGame(); state.app.selectedGame='letters'; state.app.selectedGameLabel='لعبة الحروف'; state.app.currentView='game_selected'; state.app.statusText='تمت إعادة لعبة الحروف'; emitState();});
 
   socket.on('outsiderPrime',()=>{state.app.selectedGame='outsider'; state.app.selectedGameLabel='برا السالفة'; if(!state.app.currentView||state.app.currentView==='lobby') state.app.currentView='game_selected'; state.app.statusText='تم اختيار لعبة برا السالفة'; emitState(); sendOutsiderAdminState(socket);});
   socket.on('outsiderSetConfig',({category,optionsCount}={})=>{ const g=getOutsider(); if(category && OUTSIDER_WORD_BANK[category]) g.category=category; if(optionsCount) g.optionsCount=Math.max(4, Number(optionsCount)||8); emitState(); emitOutsiderSync(); });
