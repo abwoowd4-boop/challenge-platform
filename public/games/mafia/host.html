@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم المافيا</title>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg1:#07111f;--bg2:#122946;--glass:rgba(255,255,255,.10);--glass2:rgba(255,255,255,.07);--border:rgba(255,255,255,.16);
+  --txtSub:rgba(255,255,255,.78);--gold:#ffd166;--green1:#47d98b;--green2:#0ea35b;--red1:#ff8da1;--red2:#ef476f;--blue1:#63b3ff;--blue2:#3c7dff;--purple1:#9b5cff;--purple2:#6248ff;
+}
+body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;min-height:100vh;background:
+radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),
+radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),
+linear-gradient(135deg,var(--bg1),var(--bg2));}
+.glass{background:var(--glass);border:1px solid var(--border);border-radius:28px;box-shadow:0 20px 55px rgba(0,0,0,.28);backdrop-filter:blur(14px)}
+.hidden{display:none!important}
+.top{position:sticky;top:0;padding:14px 18px;background:rgba(4,14,28,.58);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08);z-index:10}
+.bar{max-width:1480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.side{width:70px;display:flex;justify-content:center}
+.iconBtn{width:52px;height:52px;border:none;border-radius:18px;background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.16);font-size:26px;font-weight:900;cursor:pointer;transition:.2s transform,.2s opacity}
+.iconBtn:hover,.btn:hover{transform:translateY(-1px)}
+.title{text-align:center;font-size:30px;font-weight:900;flex:1}
+.menuPanel{position:fixed;top:88px;right:18px;width:320px;padding:14px;z-index:95}\n.gameModeBadge{margin-top:10px;padding:12px 16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-weight:900;color:var(--txtSub)}
+.menuBtns{display:flex;flex-direction:column;gap:10px}
+.page{padding:20px}
+.wrap{max-width:1480px;margin:0 auto;display:grid;gap:18px}
+.card{padding:22px}
+.hero{padding:28px;text-align:center;position:relative;overflow:hidden}
+.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg, rgba(255,255,255,.10), transparent 35%, rgba(255,255,255,.04));pointer-events:none}
+.big{font-size:clamp(36px,4.8vw,74px);font-weight:900;position:relative}
+.timer{margin-top:10px;font-size:clamp(28px,4vw,54px);font-weight:900;color:var(--gold);position:relative}
+.note{margin-top:14px;padding:16px;border-radius:18px;background:var(--glass2);border:1px solid rgba(255,255,255,.1);line-height:1.9;color:var(--txtSub);position:relative}
+.grid2{display:grid;grid-template-columns:1.08fr .92fr;gap:18px}
+.players{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.player{padding:14px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;overflow:hidden}
+.player:before{content:"";position:absolute;inset:auto 0 0 0;height:2px;background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent)}
+.name{font-size:18px;font-weight:900}
+.meta{margin-top:6px;color:rgba(255,255,255,.72)}
+.role{margin-top:8px;color:var(--gold);font-weight:900}
+.dead{opacity:.55;filter:grayscale(.3)}
+.h2{font-size:28px;font-weight:900;margin:0 0 12px}
+.sub{color:var(--txtSub);line-height:1.9}
+.miniBadges{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.badge{padding:16px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);text-align:center;font-weight:900}
+.badge b{display:block;font-size:26px;margin-top:8px}
+.select{width:100%;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;outline:none;margin-top:8px}
+.select option{color:#111}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:none;border-radius:18px;padding:14px 18px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--blue1),var(--blue2));transition:.2s transform,.2s opacity}
+.btn.green{background:linear-gradient(135deg,var(--green1),var(--green2))}
+.btn.red{background:linear-gradient(135deg,var(--red1),var(--red2))}
+.btn.gold{background:linear-gradient(135deg,#ffd166,#ffb703);color:#172033}
+.btn.purple{background:linear-gradient(135deg,var(--purple1),var(--purple2))}
+.btn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16)}
+.full{width:100%}
+.sectionGlow{box-shadow:0 0 0 1px rgba(255,255,255,.08), 0 20px 55px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08)}
+.endBox{padding:34px;text-align:center}
+.pulse{animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+@media (max-width:1100px){.players,.grid2,.row,.miniBadges{grid-template-columns:1fr}}
+.hero.live{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 44px rgba(255,209,102,.10)}.timer.hot{color:#ff8da1;animation:timePulse .8s ease-in-out infinite}@keyframes timePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}</style>
+</head>
+<body>
+<div class="top"><div class="bar"><div class="side"><button class="iconBtn" onclick="toggleMenu()">☰</button></div><div class="title">لوحة تحكم المافيا</div><div class="side"></div></div></div>
+<div id="menuPanel" class="menuPanel glass hidden"><div class="menuBtns"><button id="resetBtn" class="btn full hidden" onclick="resetGame()">إعادة اللعبة</button><button class="btn ghost full" onclick="location.href=withRoom('/games/mafia/setup')">تعديل إعدادات اللعبة</button><button class="btn red full" onclick="exitGame()">الخروج من اللعبة</button></div></div>
+<div class="page"><div class="wrap">
+  <div id="preStart" class="grid2">
+    <div class="glass card sectionGlow"><h2 class="h2">أسماء اللاعبين</h2><div id="playerListBefore" class="players"></div></div>
+    <div class="glass card sectionGlow"><h2 class="h2">التحكم قبل البداية</h2><div class="sub">وزّع الأدوار أولًا حتى تظهر بجانب كل اسم للمقدم، وبعدها ابدأ اللعبة لينتقل النظام إلى الليل مباشرة.</div><div class="row" style="margin-top:14px"><button class="btn" onclick="assignRoles()">توزيع أدوار اللاعبين</button><button class="btn green" onclick="startGame()">بدء اللعبة</button></div><div class="note" id="beforeNote">إذا كانت الإعدادات محفوظة، سيستخدمها النظام عند التوزيع وبدء اللعبة.</div><div class="gameModeBadge">بعد الضغط على بدء اللعبة تنتقل الجولة مباشرة إلى شاشة اللعب مثل باقي الألعاب.</div></div>
+  </div>
+
+  <div id="gameFlow" class="hidden">
+    <div class="glass hero sectionGlow"><div id="phaseTitle" class="big pulse">ليل 1</div><div id="timerText" class="timer">—</div><div id="phaseNote" class="note">بانتظار مجريات الجولة.</div></div>
+
+    <div id="nightSection" class="grid2 hidden">
+      <div class="glass card sectionGlow"><h2 class="h2">اختيارات الليل</h2><div class="sub">اختر نتائج الليل ثم اضغط إنهاء الليل.</div><div id="mafiaNamesNote" class="note" style="margin-top:12px">أسماء المافيا: —</div><div style="margin-top:8px">من أغتالته المافيا</div><select id="mafiaKillId" class="select"></select><div style="margin-top:10px">من حماه الدكتور</div><select id="doctorSaveId" class="select"></select><div style="margin-top:10px">من سأل عنه المحقق</div><select id="detectiveCheckId" class="select"></select><div id="silentWrap" class="hidden"><div style="margin-top:10px">من سكتته مافيا التسكيت</div><select id="silentTargetId" class="select"></select></div><div id="sniperWrap" class="hidden"><div style="margin-top:10px">من اختاره القناص</div><select id="sniperKillId" class="select"></select></div><div class="row" style="margin-top:14px"><button class="btn green" onclick="endNight()">إنهاء الليل</button><button class="btn red" onclick="skipRound()">تخطي الجولة</button></div></div>
+      <div class="glass card sectionGlow"><h2 class="h2">اللاعبون وأدوارهم</h2><div id="nightPlayers" class="players"></div></div>
+    </div>
+
+    <div id="daySection" class="grid2 hidden">
+      <div class="glass card sectionGlow"><h2 class="h2">معلومات اللاعبين</h2><div id="rolesListDay" class="players"></div></div>
+      <div class="glass card sectionGlow"><h2 class="h2">نتيجة الليل</h2><div id="daySummaryBox" class="note"></div><div class="row" style="margin-top:14px"><button class="btn gold" onclick="startInvestigation()">بدء جولة التحقيق</button><button class="btn red" onclick="skipRound()">تخطي الجولة</button></div></div>
+    </div>
+
+    <div id="investigationSection" class="glass card sectionGlow hidden"><h2 class="h2">جولة التحقيق</h2><div class="note">التحقيق مفتوح الآن. بعد انتهاء الوقت ستنتقل الصفحة تلقائيًا إلى التصويت.</div><div class="miniBadges" style="margin-top:14px"><div class="badge">المرحلة<b>تحقيق</b></div><div class="badge">الوقت المتبقي<b id="investRemain">—</b></div><div class="badge">الجولة<b id="investRound">—</b></div></div><div id="rolesListInvestigation" class="players" style="margin-top:14px"></div></div>
+
+    <div id="votingSection" class="grid2 hidden"><div class="glass card sectionGlow"><h2 class="h2">التصويت</h2><div class="sub">اختر لاعبًا واحدًا فقط ثم أكد التصويت. بعدها اضغط بدء وقت التبرير.</div><select id="voteSelectedPlayerId" class="select"></select><div class="row" style="margin-top:14px"><button class="btn gold" onclick="confirmVote()">تأكيد التصويت</button><button class="btn red" onclick="skipRound()">تخطي الجولة</button></div><button class="btn purple full" style="margin-top:10px" onclick="startDefense()">بدء وقت التبرير</button><div id="selectedVoteNote" class="note">لم يتم تحديد لاعب بعد.</div></div><div class="glass card sectionGlow"><h2 class="h2">معلومات اللاعبين</h2><div id="rolesListVoting" class="players"></div></div></div>
+
+    <div id="defenseSection" class="glass card sectionGlow hidden"><h2 class="h2">وقت التبرير</h2><div id="defenseTargetText" class="note">—</div><div class="miniBadges" style="margin-top:14px"><div class="badge">المرحلة<b>تبرير</b></div><div class="badge">الوقت المتبقي<b id="defenseRemain">—</b></div><div class="badge">الجولة<b id="defenseRound">—</b></div></div><div class="row" style="margin-top:14px"><button class="btn green" onclick="confirmVoteAfterDefense()">تأكيد إخراج اللاعب</button><button class="btn red" onclick="skipRound()">تخطي الجولة</button></div></div>
+
+    <div id="ropeSection" class="glass card sectionGlow hidden"><h2 class="h2">اختيار لاعب بالحبلين</h2><div class="sub">يمكنه إخراج لاعب معه. اختر اللاعب ثم أكد.</div><select id="ropePullTargetId" class="select"></select><div class="row" style="margin-top:14px"><button class="btn gold" onclick="applyRopePull()">تأكيد السحب</button><button class="btn red" onclick="skipAfterRope()">تخطي</button></div></div>
+
+    <div id="endSection" class="glass endBox sectionGlow hidden"><div id="endTitle" class="big">انتهت اللعبة</div><div id="endNote" class="note">تم تحديد الفائز.</div><button class="btn full" style="margin-top:14px" onclick="resetGame()">إعادة اللعبة</button><button class="btn red full" style="margin-top:10px" onclick="exitGame()">الخروج من اللعبة</button></div>
+  </div>
+</div></div>
+<script>
+const socket=createRoomSocket();
+socket.emit('registerHost',{page:'mafia-host'});
+socket.emit('selectGame',{gameKey:'mafia',gameLabel:'لعبة المافيا'});
+let autoMovedToVote=false;
+function toggleMenu(){document.getElementById('menuPanel').classList.toggle('hidden')}
+document.addEventListener('click',(e)=>{const p=document.getElementById('menuPanel');if(!p.classList.contains('hidden')&&!p.contains(e.target)&&!e.target.closest('.iconBtn'))p.classList.add('hidden');});
+document.addEventListener('click',(e)=>{ if(e.target.closest('.btn')||e.target.closest('.iconBtn')) GameFX.click(); });
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function roleLabel(role=''){return {mafia:'مافيا',doctor:'دكتور',detective:'المحقق',mayor:'عمدة المواطنين',sniper:'قناص المواطنين',rope:'لاعب بالحبلين',silentMafia:'مافيا التسكيت',citizen:'مواطن'}[role]||role||'—'}
+function fillSelect(id, players, allowEmpty=true, filterFn=null){
+  const el=document.getElementById(id); if(!el) return;
+  let alive=players.filter(p=>p.isAlive);
+  if(typeof filterFn==='function') alive=alive.filter(filterFn);
+  el.innerHTML=(allowEmpty?'<option value="">—</option>':'')+alive.map(p=>`<option value="${p.playerId}">${esc(p.name)}</option>`).join('');
+}
+function playerCard(p){return `<div class="player ${!p.isAlive?'dead':''}"><div class="name">${esc(p.name)}</div><div class="meta">${p.isAlive?'حي':'خارج اللعبة'}</div>${p.role?`<div class="role">${esc(roleLabel(p.role))}</div>`:''}</div>`;}
+function hideSections(){['nightSection','daySection','investigationSection','votingSection','defenseSection','ropeSection','endSection'].forEach(id=>{const el=document.getElementById(id); if(el) el.classList.add('hidden')})}
+function assignRoles(){socket.emit('mafiaAssignRoles')}
+function startGame(){socket.emit('mafiaStartNight')}
+function endNight(){['mafiaKillId','doctorSaveId','detectiveCheckId','silentTargetId','sniperKillId'].forEach(key=>{const el=document.getElementById(key);socket.emit('mafiaSetNightAction',{actionKey:key,playerId:el?el.value:''});});socket.emit('mafiaStartDay')}
+function startInvestigation(){autoMovedToVote=false; socket.emit('mafiaStartInvestigation')}
+function confirmVote(){const id=document.getElementById('voteSelectedPlayerId').value;if(!id) return;socket.emit('mafiaSelectVoteTarget',{playerId:id});document.getElementById('selectedVoteNote').textContent='تم اختيار اللاعب. يمكنك الآن بدء وقت التبرير.';}
+function startDefense(){const id=document.getElementById('voteSelectedPlayerId').value;if(!id) return;autoMovedToVote=true;socket.emit('mafiaSelectVoteTarget',{playerId:id});setTimeout(()=>socket.emit('mafiaOpenDefense'),80)}
+function confirmVoteAfterDefense(){socket.emit('mafiaConfirmVoteElimination')}
+function applyRopePull(){const id=document.getElementById('ropePullTargetId').value;if(id) socket.emit('mafiaSetRopePullTarget',{playerId:id});setTimeout(()=>socket.emit('mafiaApplyRopePull'),80);setTimeout(()=>socket.emit('mafiaStartNight'),180)}
+function skipAfterRope(){socket.emit('mafiaStartNight')}
+function skipRound(){socket.emit('mafiaNextRound'); setTimeout(()=>socket.emit('mafiaStartNight'),120)}
+function resetGame(){socket.emit('mafiaReset')}
+function exitGame(){ socket.emit('exitGameToTeams'); document.getElementById('menuPanel')?.classList.add('hidden'); window.location.href=withRoom('/host') }
+
+socket.on('stateUpdate',(state)=>{
+  const mafia=(state.games||{}).mafia||{};
+  const players=state.players||[];
+  const started=!!mafia.started;
+  const winner=mafia.winner||'';
+  document.getElementById('resetBtn').classList.toggle('hidden', !started);
+  document.getElementById('preStart').classList.toggle('hidden', started);
+  document.getElementById('gameFlow').classList.toggle('hidden', !started);
+  document.querySelector('.title').textContent = started ? 'لوحة تحكم المافيا' : 'بدء لعبة المافيا';
+  document.getElementById('playerListBefore').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+  if(!started) return;
+  hideSections();
+  const phase=mafia.phase||'setup';
+  const timer=mafia.timer||{};
+  document.getElementById('phaseTitle').textContent = winner ? 'انتهت اللعبة' : `${mafia.phaseLabel||phase} - الجولة ${mafia.round||1}`;
+  document.getElementById('timerText').textContent = (timer.mode && timer.mode!=='idle') ? `${timer.secondsLeft||0} ثانية` : '—';
+  document.getElementById('investRemain').textContent=(timer.mode==='investigation')?`${timer.secondsLeft||0} ثانية`:'—';
+  document.getElementById('defenseRemain').textContent=(timer.mode==='defense')?`${timer.secondsLeft||0} ثانية`:'—';
+  document.getElementById('investRound').textContent=mafia.round||1;
+  document.getElementById('defenseRound').textContent=mafia.round||1;
+  const mafiaIds=new Set(players.filter(p=>['mafia','silentMafia'].includes(p.role)).map(p=>p.playerId));
+  fillSelect('mafiaKillId',players,true,p=>!mafiaIds.has(p.playerId));
+  fillSelect('doctorSaveId',players,true);
+  fillSelect('detectiveCheckId',players,true);
+  fillSelect('silentTargetId',players,true,p=>!mafiaIds.has(p.playerId));
+  fillSelect('sniperKillId',players,true);
+  fillSelect('voteSelectedPlayerId',players,true);
+  const votedId=(mafia.voteResult||{}).selectedPlayerId||'';
+  document.getElementById('ropePullTargetId').innerHTML='<option value="">—</option>'+players.filter(p=>p.isAlive && p.playerId!==votedId).map(p=>`<option value="${p.playerId}">${esc(p.name)}</option>`).join('');
+  document.getElementById('silentWrap').classList.toggle('hidden', !mafia.settings?.enableSilentMafia);
+  document.getElementById('sniperWrap').classList.toggle('hidden', !mafia.settings?.enableSniper || !!mafia.sniperUsed);
+  if(winner){
+    document.getElementById('endSection').classList.remove('hidden');
+    document.getElementById('endTitle').textContent = winner==='mafia' ? 'انتهت اللعبة - فازت المافيا' : 'انتهت اللعبة - فاز المواطنون';
+    document.getElementById('endNote').textContent = 'يمكنك إعادة اللعبة أو الخروج من اللعبة.';
+    return;
+  }
+  if(phase==='night'){
+    document.getElementById('nightSection').classList.remove('hidden');
+    document.getElementById('nightPlayers').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+    const mafiaPlayers=players.filter(p=>['mafia','silentMafia'].includes(p.role));
+    document.getElementById('mafiaNamesNote').textContent='أسماء المافيا: '+(mafiaPlayers.length?mafiaPlayers.map(p=>p.name).join(' - '):'—');
+    document.getElementById('phaseNote').textContent='حل الليل. حدد نتائج الأدوار ثم اضغط إنهاء الليل.';
+  } else if(phase==='day'){
+    document.getElementById('daySection').classList.remove('hidden');
+    document.getElementById('rolesListDay').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+    const day=mafia.daySummary||{};
+    let txt = day.savedId ? 'تمت حماية أحد اللاعبين هذه الليلة. ' : '';
+    txt += day.killedId ? `تم قتل ${esc(players.find(p=>p.playerId===day.killedId)?.name||'—')}. ` : 'لم يتم قتل أحد. ';
+    if(day.silencedId) txt += `وتم تسكيت ${esc(players.find(p=>p.playerId===day.silencedId)?.name||'—')}.`;
+    document.getElementById('daySummaryBox').textContent=txt;
+    document.getElementById('phaseNote').textContent='انتهى الليل وظهرت النتيجة.';
+  } else if(phase==='investigation'){
+    document.getElementById('investigationSection').classList.remove('hidden');
+    document.getElementById('rolesListInvestigation').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+    document.getElementById('phaseNote').textContent='بدأت جولة التحقيق.';
+    if(timer.mode==='investigation' && (timer.secondsLeft||0)>0){autoMovedToVote=false;}
+    if(timer.mode==='investigation' && (timer.secondsLeft||0)<=0 && !autoMovedToVote){autoMovedToVote=true; socket.emit('mafiaStartVoting');}
+  } else if(phase==='voting' || phase==='results'){
+    document.getElementById('votingSection').classList.remove('hidden');
+    document.getElementById('rolesListVoting').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+    const target=players.find(p=>p.playerId===votedId);
+    document.getElementById('selectedVoteNote').textContent=target?`اللاعب المختار: ${target.name}`:'لم يتم تحديد لاعب بعد.';
+    document.getElementById('phaseNote').textContent='اختر لاعبًا واحدًا ثم أكد التصويت أو ابدأ وقت التبرير.';
+  } else if(phase==='defense'){
+    document.getElementById('defenseSection').classList.remove('hidden');
+    const target=players.find(p=>p.playerId===votedId);
+    document.getElementById('defenseTargetText').textContent=target?`اللاعب المختار للتبرير: ${target.name}`:'لم يتم اختيار لاعب بعد';
+    document.getElementById('phaseNote').textContent='بدأ وقت التبرير.';
+  }
+  if((mafia.voteResult||{}).ropeDecisionPending){document.getElementById('ropeSection').classList.remove('hidden');}
+});
+socket.on('gameEnded',()=>{ window.location.replace(withRoom('/host')); });
+</script>
+</body>
+</html>

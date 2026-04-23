@@ -1,0 +1,56 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>إعدادات لعبة الحروف</title><script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script>
+<style>
+*{box-sizing:border-box}:root{--tb:#62c924;--side:#ff8a3d;--team1:#51c84d;--team2:#7a57d1;--cellFill:#fafafa;--cellStroke:#7a57d1;--cellText:#6f46b2}
+body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;min-height:100vh;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,#07111f,#122946)}
+.top{position:sticky;top:0;padding:14px 18px;background:rgba(4,14,28,.58);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08);z-index:10}
+.bar{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:70px 1fr 70px;align-items:center}
+.iconBtn{width:52px;height:52px;border:none;border-radius:18px;background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.16);font-size:26px;font-weight:900;cursor:pointer}
+.title{text-align:center;font-size:30px;font-weight:900}
+.page{padding:24px}
+.wrap{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+.glass{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:28px;box-shadow:0 18px 50px rgba(0,0,0,.28);backdrop-filter:blur(14px)}
+.card{padding:24px}
+.hero{font-size:clamp(34px,4vw,64px);font-weight:900;margin:0 0 10px}
+.sub{color:rgba(255,255,255,.78);line-height:1.9}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.input,.select{width:100%;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;outline:none;font-size:16px}
+.select option{color:#111}
+.btn{border:none;border-radius:18px;padding:14px 18px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#3c7dff,#625dff)}
+.btn.green{background:linear-gradient(135deg,#47d98b,#0ea35b)}
+.label{margin:14px 0 8px;color:rgba(255,255,255,.88);font-weight:800}
+.note{margin-top:14px;padding:16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);line-height:1.8}
+.colors{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.colorBox{padding:14px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.colorBox input{width:100%;height:48px;border:none;background:none}
+.boardShell{margin-top:18px;padding:18px;border-radius:32px;background:linear-gradient(to bottom,var(--tb) 0 12%, var(--side) 12% 88%, var(--tb) 88% 100%);box-shadow:inset 0 0 0 8px rgba(255,223,117,.92)}
+.boardInner{padding:8px 6px;border-radius:24px;background:rgba(255,255,255,.05);display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.hexRow{display:flex;align-items:center;justify-content:center;margin-top:-26px}
+.hexRow:first-child{margin-top:0}
+.hexRow.shift{transform:translateX(-40px)}
+.miniHex{width:74px;height:84px;clip-path:polygon(50% 0%,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);background:transparent;color:var(--cellText);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;position:relative;margin-inline:-7px;line-height:1}
+.miniHex::before{content:"";position:absolute;inset:0;clip-path:inherit;background:var(--cellStroke);z-index:0}
+.miniHex::after{content:"";position:absolute;inset:1.2px;clip-path:inherit;background:var(--cellFill);z-index:1}
+.miniHex>*{position:relative;z-index:2}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tag{padding:12px;border-radius:16px;text-align:center;font-weight:900}
+.tag.team1{background:rgba(81,200,77,.22);border:1px solid rgba(81,200,77,.48)}
+.tag.team2{background:rgba(122,87,209,.22);border:1px solid rgba(122,87,209,.48)}
+@media (max-width:900px){.wrap,.row,.colors,.legend{grid-template-columns:1fr}.hexRow{margin-top:-20px}.hexRow.shift{transform:translateX(-31px)}.miniHex{width:62px;height:70px;font-size:28px;margin-inline:-5px}}</style></head><body>
+<div class="top"><div class="bar"><button class="iconBtn" onclick="location.href=withRoom('/games')">←</button><div class="title">إعدادات لعبة الحروف</div><div></div></div></div>
+<div class="page"><div class="wrap">
+<div class="glass card"><h1 class="hero">جهّز اللعبة</h1><div class="sub">حدد حجم اللوحة، وقت الإجابة، وقت انتقال الفرصة، وألوان إطار اللوحة والفرق.</div>
+<div class="label">حجم الشبكة</div><select id="gridSize" class="select"><option value="3">3 × 3</option><option value="4">4 × 4</option><option value="5">5 × 5</option></select>
+<div class="row" style="margin-top:14px"><div><div class="label">وقت الإجابة بعد ضغط الزر</div><input id="answerSeconds" class="input" type="number" min="3" max="60" value="10"></div><div><div class="label">وقت الفريق الآخر</div><input id="otherTeamSeconds" class="input" type="number" min="3" max="60" value="7"></div></div>
+<div class="label">ألوان التصميم</div><div class="colors"><div class="colorBox">الأعلى والأسفل<input id="frameTopBottom" type="color" value="#62c924"></div><div class="colorBox">اليمين واليسار<input id="frameSides" type="color" value="#ff8a3d"></div><div class="colorBox">لون الفريق الأول<input id="team1Color" type="color" value="#51c84d"></div><div class="colorBox">لون الفريق الثاني<input id="team2Color" type="color" value="#ff8a3d"></div></div>
+<div class="row" style="margin-top:16px"><button class="btn green" onclick="saveConfig()">حفظ الإعدادات</button><button class="btn" onclick="goToHost()">فتح صفحة التشغيل</button></div><div id="statusBox" class="note">بانتظار الحفظ</div></div>
+<div class="glass card"><h2 style="margin:0 0 10px;font-size:28px">معاينة الشكل</h2><div class="sub">ألوان الصفحة تبقى كما هي، والتغيير يطبّق فقط على لوحة الحروف.</div><div id="shell" class="boardShell"><div id="previewGrid" class="boardInner"></div></div><div class="legend"><div class="tag team1">الفريق الأول: يصل من الأعلى للأسفل</div><div class="tag team2">الفريق الثاني: يصل من اليسار لليمين</div></div></div>
+</div></div>
+<script>
+const socket=createRoomSocket();socket.emit('lettersPrime');
+const PREVIEW_LETTERS='ابتثجحخدذرزسشصضطظعغفقكلمنهوي'.split('');
+function buildPreview(){const size=Number(gridSize.value||5);shell.style.setProperty('--tb',frameTopBottom.value);shell.style.setProperty('--side',frameSides.value);document.documentElement.style.setProperty('--team1',team1Color.value);document.documentElement.style.setProperty('--team2',team2Color.value);previewGrid.innerHTML='';const cells=size*size;const letters=PREVIEW_LETTERS.slice(0,cells);for(let r=0;r<size;r++){const row=document.createElement('div');row.className='hexRow'+(r%2?' shift':'');for(let c=0;c<size;c++){const d=document.createElement('div');d.className='miniHex';d.innerHTML=`<span>${letters[(r*size)+c]||''}</span>`;row.appendChild(d)}previewGrid.appendChild(row)}}
+function payload(){return{gridSize:Number(gridSize.value||5),answerSeconds:Number(answerSeconds.value||10),otherTeamSeconds:Number(otherTeamSeconds.value||7),frameTopBottom:frameTopBottom.value,frameSides:frameSides.value,team1Color:team1Color.value,team2Color:team2Color.value}}
+function saveConfig(){socket.emit('lettersPrime');socket.emit('lettersUpdateConfig',payload());statusBox.textContent='تم حفظ إعدادات لعبة الحروف';buildPreview()}
+function goToHost(){saveConfig();location.href=withRoom('/games/letters/host')}
+socket.on('stateUpdate',(state)=>{const letters=(state.games||{}).letters||{};gridSize.value=String(letters.gridSize||5);answerSeconds.value=letters.settings?.answerSeconds||10;otherTeamSeconds.value=letters.settings?.otherTeamSeconds||7;frameTopBottom.value=letters.settings?.frameTopBottom||'#62c924';frameSides.value=letters.settings?.frameSides||'#ff8a3d';team1Color.value=letters.settings?.team1Color||'#51c84d';team2Color.value=letters.settings?.team2Color||'#ff8a3d';if(letters.statusText)statusBox.textContent=letters.statusText;buildPreview()});[gridSize,frameTopBottom,frameSides,team1Color,team2Color].forEach(el=>el.addEventListener('change',buildPreview));buildPreview();
+</script></body></html>

@@ -1,0 +1,19 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>إعدادات صيد اللون</title><script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,#07111f,#122946);min-height:100vh}.glass{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:28px;box-shadow:0 18px 50px rgba(0,0,0,.28);backdrop-filter:blur(14px)}.top{position:sticky;top:0;padding:14px 18px;background:rgba(4,14,28,.58);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08)}.bar{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:70px 1fr 70px;align-items:center}.back{width:52px;height:52px;border:none;border-radius:18px;background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.16);font-size:26px;font-weight:900;cursor:pointer}.title{text-align:center;font-size:30px;font-weight:900}.page{padding:22px}.wrap{max-width:1200px;margin:0 auto}.card{padding:24px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.input{width:100%;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;outline:none}.btn{border:none;border-radius:18px;padding:14px 18px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#3c7dff,#625dff)}.btn.green{background:linear-gradient(135deg,#47d98b,#0ea35b)}.sub{color:rgba(255,255,255,.8);line-height:1.9}.note{margin-top:14px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);line-height:1.9}@media (max-width:900px){.grid{grid-template-columns:1fr}}</style></head><body>
+<div class="top"><div class="bar"><button class="back" onclick="location.href=withRoom('/games')">←</button><div class="title">إعدادات صيد اللون</div><div></div></div></div>
+<div class="page"><div class="wrap"><div class="glass card">
+<div class="sub">حدد عدد الجولات ووقت الاستعداد ووقت التصوير. سيتم حفظ الإعدادات لاستخدامها عند بدء اللعبة.</div>
+<div class="grid" style="margin-top:16px">
+<div><div class="sub">عدد الجولات</div><input id="roundsInput" class="input" type="number" min="1" max="20" value="3"></div>
+<div><div class="sub">وقت الاستعداد قبل الجولة</div><input id="prepInput" class="input" type="number" min="3" max="60" value="10"></div>
+<div><div class="sub">وقت التصوير</div><input id="playInput" class="input" type="number" min="5" max="120" value="20"></div>
+</div>
+<div class="note">آلية النقاط الحالية: الأسرع الصحيح 5 نقاط، الثاني 3، الثالث 1. تم توسيع درجات الألوان وتقليل تكرارها بين الجولات.</div>
+<div style="height:14px"></div>
+<button class="btn green" style="width:100%" onclick="saveSettings()">حفظ الإعدادات</button>
+</div></div></div>
+<script>
+const socket=createRoomSocket(); socket.emit('registerHost',{page:'color-setup'});
+function saveSettings(){ socket.emit('colorUpdateConfig',{rounds:+roundsInput.value||3, prepSeconds:+prepInput.value||10, playSeconds:+playInput.value||20}); }
+socket.on('stateUpdate',(state)=>{ const c=(state.games||{}).color||{}; roundsInput.value=c.settings?.rounds||3; prepInput.value=c.settings?.prepSeconds||10; playInput.value=c.settings?.playSeconds||20; });
+</script></body></html>

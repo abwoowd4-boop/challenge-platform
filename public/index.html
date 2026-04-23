@@ -1,0 +1,192 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ساحة التحدي</title><script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script>
+<style>
+*{box-sizing:border-box}
+:root{--bg1:#07111f; --bg2:#122946; --glass:rgba(255,255,255,.10); --glass2:rgba(255,255,255,.08);--border:rgba(255,255,255,.16); --txt:rgba(255,255,255,.88); --sub:rgba(255,255,255,.74);--panel:rgba(255,255,255,.06); --panel2:rgba(255,255,255,.12);}
+body{margin:0; width:100vw; height:100vh; overflow:hidden; color:#fff;font-family:Tahoma,Segoe UI,sans-serif;background:radial-gradient(circle at top right, rgba(91,160,255,.20), transparent 28%),radial-gradient(circle at top left, rgba(255,118,146,.16), transparent 28%),linear-gradient(135deg,var(--bg1),var(--bg2));}
+.page{width:100%;height:100%;display:flex;flex-direction:column;padding:18px 24px 20px}
+.glass{background:var(--glass);border:1px solid var(--border);border-radius:30px;box-shadow:0 20px 60px rgba(0,0,0,.30);backdrop-filter:blur(14px)}
+.hidden{display:none!important}
+.topBadge{display:flex;justify-content:center;margin-bottom:10px}
+.roomPill{display:inline-flex;align-items:center;gap:12px;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:900;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.roomPill .lab{opacity:.75;font-size:14px}.roomPill .code{font-size:24px;letter-spacing:2px}
+.roomPill button{border:none;border-radius:14px;padding:9px 14px;background:rgba(255,255,255,.10);color:#fff;font-weight:900;cursor:pointer}
+.hero{text-align:center;font-size:clamp(52px,5.5vw,104px);margin:0;font-weight:900;text-shadow:0 16px 32px rgba(0,0,0,.28);letter-spacing:.5px}
+.heroSub{text-align:center;color:var(--sub);font-size:clamp(17px,1.5vw,26px);margin:6px 0 14px;font-weight:700}
+.status{margin:0 auto 18px;width:min(94vw,1400px);padding:16px 24px;text-align:center;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);font-size:clamp(18px,1.7vw,30px);font-weight:900;color:var(--txt);box-shadow:0 8px 26px rgba(0,0,0,.18)}
+.introQrView{flex:1;display:grid;grid-template-columns:1.12fr .88fr;gap:18px;min-height:0}
+.introMain{padding:28px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.introMain::before{content:"";position:absolute;inset:auto -80px -80px auto;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,.12), transparent 68%);pointer-events:none}
+.introTag{display:inline-flex;align-items:center;gap:10px;width:fit-content;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:900;color:#dbeafe}
+.introTitle{font-size:clamp(34px,3vw,60px);font-weight:900;margin:14px 0 10px;line-height:1.25}
+.introLead{color:var(--sub);font-size:clamp(18px,1.5vw,24px);line-height:2;margin:0}
+.introSteps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.stepCard{padding:16px;border-radius:22px;background:var(--panel);border:1px solid rgba(255,255,255,.12)}
+.stepNum{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);font-weight:900;margin-bottom:10px}
+.stepTitle{font-size:18px;font-weight:900;margin-bottom:6px}.stepSub{font-size:14px;line-height:1.8;color:rgba(255,255,255,.74)}
+.quickLinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.quickBtn{border:none;border-radius:18px;padding:13px 16px;background:linear-gradient(135deg,#3c7dff,#625dff);color:#fff;font-weight:900;cursor:pointer}.quickBtn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.introCards{display:grid;grid-template-rows:1fr;gap:18px;min-height:0}
+.introCard{padding:22px;display:grid;grid-template-columns:180px 1fr;gap:18px;align-items:center;background:linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.05))}
+.qrCol{display:flex;align-items:center;justify-content:center}.introQrImg{display:block;width:172px;height:172px;border-radius:24px;background:#fff;padding:10px;box-shadow:0 16px 34px rgba(0,0,0,.24)}
+.cardTag{display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:13px;font-weight:900;color:#dbeafe}
+.cardTitle{font-size:30px;font-weight:900;margin:10px 0 8px}.cardSub{color:var(--sub);line-height:1.9;margin:0 0 14px}.introLink{direction:ltr;word-break:break-all;font-size:13px;color:#bfdbfe;background:rgba(255,255,255,.06);padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10)}
+.introActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.introBtn{border:none;border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.10);color:#fff;font-weight:900;cursor:pointer;border:1px solid rgba(255,255,255,.14)}
+.lobbyView{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-areas:"stats stats stats stats" "team1 team1 team2 team2" "unassigned unassigned unassigned unassigned";gap:18px;min-height:0}
+.statsBar{grid-area:stats;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.statCard{padding:18px;border-radius:24px;text-align:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.statLabel{font-size:15px;color:rgba(255,255,255,.72);font-weight:800}.statValue{font-size:54px;font-weight:900;line-height:1;margin-top:8px}
+.bigTeams{display:contents}
+.teamPanel{display:flex;flex-direction:column;min-height:320px;padding:24px;border-radius:34px;border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.teamPanel.red{grid-area:team1;background:linear-gradient(135deg, rgba(255,118,146,.20), rgba(239,71,111,.10))}
+.teamPanel.blue{grid-area:team2;background:linear-gradient(135deg, rgba(91,160,255,.20), rgba(35,108,255,.10))}
+.teamTitle{text-align:center;font-size:clamp(38px,3vw,62px);font-weight:900;margin:0}
+.teamCount{text-align:center;margin-top:8px;font-size:20px;color:rgba(255,255,255,.82);font-weight:800}
+.divider{height:2px;width:76%;background:rgba(255,255,255,.18);margin:14px auto 18px;border-radius:6px}
+.teamPlayers{flex:1;min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-content:start;overflow:auto;padding-inline:4px}
+.nameBox{min-height:78px;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;border-radius:22px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);font-weight:900;font-size:24px;line-height:1.4}
+.unassignedWrap{grid-area:unassigned;padding:14px 18px 16px;border-radius:26px;min-height:120px}.unassignedTitle{text-align:center;margin:0 0 10px;font-size:20px;font-weight:900;color:rgba(255,255,255,.85)}
+.smallList{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.smallName{min-height:48px;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:16px;font-weight:800}
+.gameStage{flex:1;display:grid;grid-template-columns:240px minmax(0,1fr) 240px;gap:18px;align-items:start;min-height:0}.gameStage.noScores{grid-template-columns:minmax(0,1fr)}.gameStage.noScores .cornerScore{display:none}
+.cornerScore{width:100%;padding:20px;border-radius:28px;text-align:center;border:1px solid rgba(255,255,255,.15);position:relative;overflow:hidden}.cornerScore.red{background:linear-gradient(135deg, rgba(255,118,146,.18), rgba(239,71,111,.10))}.cornerScore.blue{background:linear-gradient(135deg, rgba(91,160,255,.18), rgba(35,108,255,.10))}.sideName{font-size:24px;font-weight:900;margin-bottom:10px}.sideValue{font-size:54px;font-weight:900;line-height:1}
+.centerWrap{width:100%;max-width:1180px;margin:0 auto;min-height:0}.centerGame,.mafiaStage{padding:28px;border-radius:34px;text-align:center;min-height:100%}.centerTitle{font-size:clamp(40px,3.2vw,68px);font-weight:900;margin:0 0 10px}.centerSub{text-align:center;color:var(--sub);font-size:clamp(22px,2vw,30px);line-height:1.8}
+.bigColorChip{height:150px;width:min(100%,620px);border-radius:34px;border:2px solid rgba(255,255,255,.24);margin:22px auto 0;box-shadow:0 0 28px rgba(255,255,255,.22),0 0 70px rgba(255,255,255,.12);animation:pulseGlow 1.8s infinite}
+@keyframes pulseGlow{0%{transform:scale(1);box-shadow:0 0 24px rgba(255,255,255,.22),0 0 60px rgba(255,255,255,.12)}50%{transform:scale(1.03);box-shadow:0 0 44px rgba(255,255,255,.36),0 0 90px rgba(255,255,255,.18)}100%{transform:scale(1);box-shadow:0 0 24px rgba(255,255,255,.22),0 0 60px rgba(255,255,255,.12)}}
+.midRow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}.midBox{padding:18px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);text-align:center}.midLabel{font-size:15px;color:rgba(255,255,255,.58);margin-bottom:8px;font-weight:800}.midValue{font-size:40px;font-weight:900}
+.resultsWrap{margin-top:22px;display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.resultCard{padding:22px}.resultTitle{font-size:28px;font-weight:900;margin:0 0 14px}.scoreboard{display:grid;gap:12px}.scoreRow{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:18px}.winnerImg{width:100%;max-height:320px;object-fit:cover;border-radius:22px;border:1px solid rgba(255,255,255,.14);margin-top:12px}
+.overlay{position:fixed;inset:0;background:rgba(2,10,22,.68);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}.overlayCard{width:min(95vw,580px);padding:24px;position:relative}.closeX{position:absolute;top:12px;left:12px;width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);font-size:22px;font-weight:900}.qrTitle{text-align:center;font-size:32px;font-weight:900;margin:8px 0 16px}.qrImage{display:block;width:280px;max-width:100%;margin:0 auto 16px;border-radius:18px;background:#fff;padding:10px}.qrLink{text-align:center;direction:ltr;word-break:break-all;color:#dbeafe;font-size:15px}
+.soundBtn{position:fixed;bottom:20px;left:20px;background:#000;padding:10px 14px;border-radius:12px;cursor:pointer;z-index:9999;user-select:none;font-weight:900;border:1px solid rgba(255,255,255,.15);box-shadow:0 10px 20px rgba(0,0,0,.25)}
+.mafiaStage{padding:30px 28px}.mafiaMessage{margin-top:20px;padding:22px;border-radius:24px;text-align:center;font-size:34px;font-weight:900;color:rgba(255,255,255,.95);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+@media (max-width:1280px){.introQrView{grid-template-columns:1fr}.introCards{grid-template-rows:auto;grid-template-columns:1fr}.introSteps{grid-template-columns:1fr}}
+@media (max-width:1200px){body{overflow:auto}.page{height:auto;min-height:100vh}.lobbyView,.gameStage,.resultsWrap,.midRow{grid-template-columns:1fr}.lobbyView{grid-template-areas:"stats" "team1" "team2" "unassigned"}.statsBar{grid-template-columns:1fr 1fr}.gameStage{grid-template-columns:1fr}.cornerScore{position:static}.teamPanel{min-height:auto}}
+@media (max-width:760px){.introCards{grid-template-columns:1fr}.introCard{grid-template-columns:1fr}.qrCol{order:-1}.hero{font-size:44px}.roomPill{flex-wrap:wrap;justify-content:center}.statsBar{grid-template-columns:1fr}}
+</style></head><body>
+  <div id="flashEffect" style="position:fixed; inset:0; pointer-events:none; background:white; opacity:0; z-index:99999; transition:opacity .3s ease;"></div>
+  <div class="page">
+    <div class="topBadge"><div class="roomPill"><span class="lab">كود الجلسة</span><strong class="code" data-room-code>----</strong><button onclick="location.href=withRoom('/lobby')">تغيير الجلسة</button></div></div>
+    <h1 class="hero">ساحة التحدي</h1>
+    <div class="heroSub">افتح هذه الصفحة على الشاشة الكبيرة، ثم امسح QR التحكم من الجوال لبدء اللعب بسرعة داخل نفس الغرفة.</div>
+    <div id="statusText" class="status">امسح QR التحكم للبدء</div>
+
+    <div id="introQrView" class="introQrView hidden">
+      <div class="glass introMain">
+        <div>
+          <div class="introTag">✨ تشغيل احترافي سريع</div>
+          <div class="introTitle">ابدأ التحكم في ثوانٍ بدون نسخ روابط</div>
+          <p class="introLead">اعرض هذه الصفحة على الشاشة الكبيرة، ثم امسح QR من الجوال لفتح لوحة التحكم مباشرة داخل نفس الغرفة.</p>
+          <div class="introSteps">
+            <div class="stepCard"><div class="stepNum">1</div><div class="stepTitle">افتح الشاشة</div><div class="stepSub">هذه الصفحة تبقى على التلفزيون أو الكمبيوتر كواجهة العرض الرئيسية.</div></div>
+            <div class="stepCard"><div class="stepNum">2</div><div class="stepTitle">امسح QR</div><div class="stepSub">امسح QR التحكم من جوالك لفتح لوحة التحكم مباشرة.</div></div>
+            <div class="stepCard"><div class="stepNum">3</div><div class="stepTitle">ابدأ اللعب</div><div class="stepSub">بعد دخول المقدم تتحول الشاشة تلقائيًا إلى الفرق ثم إلى اللعبة المختارة.</div></div>
+          </div>
+        </div>
+        <div class="quickLinks">
+          <button class="quickBtn" onclick="copyIntroLink()">نسخ رابط التحكم</button>
+          <button class="quickBtn ghost" onclick="location.reload()">تحديث الشاشة</button>
+        </div>
+      </div>
+      <div class="introCards">
+        <div class="glass introCard">
+          <div class="qrCol"><img id="introHostQr" class="introQrImg" alt="QR host"></div>
+          <div>
+            <div class="cardTag">لوحة التحكم</div>
+            <div class="cardTitle">QR المقدم</div>
+            <p class="cardSub">يمكّن المقدم من الدخول السريع إلى لوحة التحكم الخاصة بالغرفة من الجوال.</p>
+            <div id="introHostLink" class="introLink"></div>
+            <div class="introActions"><button class="introBtn" onclick="copyIntroLink()">نسخ الرابط</button><button class="introBtn" onclick="openPreviewLink()">فتح الرابط</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="lobbyView" class="lobbyView hidden">
+      <div class="statsBar">
+        <div class="statCard"><div class="statLabel">إجمالي اللاعبين</div><div id="statTotal" class="statValue">0</div></div>
+        <div class="statCard"><div class="statLabel">الفريقf الأول</div><div id="statTeam1" class="statValue">0</div></div>
+        <div class="statCard"><div class="statLabel">الفريق الثاني</div><div id="statTeam2" class="statValue">0</div></div>
+        <div class="statCard"><div class="statLabel">بدون فريق</div><div id="statUnassigned" class="statValue">0</div></div>
+      </div>
+      <div class="bigTeams">
+        <div class="teamPanel red"><h2 id="teamName1" class="teamTitle">الفريق الأول</h2><div id="teamCount1" class="teamCount">0 لاعبين</div><div class="divider"></div><div id="teamPlayers1" class="teamPlayers"></div></div>
+        <div class="teamPanel blue"><h2 id="teamName2" class="teamTitle">الفريق الثاني</h2><div id="teamCount2" class="teamCount">0 لاعبين</div><div class="divider"></div><div id="teamPlayers2" class="teamPlayers"></div></div>
+      </div>
+      <div class="glass unassignedWrap"><div class="unassignedTitle">اللاعبون بدون فرق</div><div id="unassignedPlayers" class="smallList"></div></div>
+    </div>
+
+    <div id="gameView" class="hidden gameStage">
+      <div id="cornerLeft" class="cornerScore red"><div id="scoreTeamName1" class="sideName">الفريق الأول</div><div id="scoreTeam1" class="sideValue">0</div></div>
+      <div class="centerWrap">
+        <div id="colorView" class="glass centerGame hidden">
+          <h2 id="gameNameText" class="centerTitle">لم يتم اختيار لعبة</h2>
+          <div id="gameHintText" class="centerSub">اختر اللعبة من لوحة التحكم</div>
+          <div id="targetColorLabel" class="centerSub"></div>
+          <div id="targetColorChip" class="bigColorChip hidden"></div>
+          <div class="midRow">
+            <div class="midBox"><div class="midLabel">الجولة الحالية</div><div id="roundNow" class="midValue">0</div></div>
+            <div class="midBox"><div class="midLabel">المؤقت</div><div id="countdownText" class="midValue">--</div></div>
+            <div class="midBox"><div class="midLabel">عدد الذين أرسلوا</div><div id="sentCount" class="midValue">0</div></div>
+          </div>
+          <div id="resultsWrap" class="resultsWrap hidden">
+            <div class="glass resultCard"><h3 class="resultTitle">نتائج الجولة</h3><div id="scoreboard" class="scoreboard"></div></div>
+            <div class="glass resultCard"><div id="winnerTeamText" style="font-size:30px;font-weight:900;"></div><div id="winnerPointsText" style="margin-top:10px;color:rgba(255,255,255,.82);font-size:22px;"></div><div id="fastestCorrectText" style="margin-top:10px;font-size:24px;font-weight:900;"></div><img id="winnerImg" class="winnerImg hidden" alt="winner"></div>
+          </div>
+        </div>
+        <div id="mafiaView" class="glass mafiaStage hidden">
+          <h2 class="centerTitle">لعبة المافيا</h2><div id="mafiaPhaseText" class="centerSub">بانتظار البدء</div>
+          <div class="midRow" style="margin-top:24px;"><div class="midBox"><div class="midLabel">رقم الليلة</div><div id="mafiaNightNumber" class="midValue">0</div></div><div class="midBox"><div class="midLabel">الأحياء</div><div id="mafiaAliveCount" class="midValue">0</div></div><div class="midBox"><div class="midLabel">الموتى</div><div id="mafiaDeadCount" class="midValue">0</div></div></div>
+          <div id="mafiaMainMessage" class="mafiaMessage">تبدأ اللعبة قريبًا</div>
+          <div id="mafiaSecondaryMessage" class="centerSub" style="margin-top:16px;"></div>
+          <div class="resultsWrap" style="margin-top:26px;"><div class="glass resultCard"><h3 class="resultTitle">الأحياء</h3><div id="mafiaAliveList" class="scoreboard"></div></div><div class="glass resultCard"><h3 class="resultTitle">الموتى</h3><div id="mafiaDeadList" class="scoreboard"></div></div></div>
+        </div>
+      </div>
+      <div id="cornerRight" class="cornerScore blue"><div id="scoreTeamName2" class="sideName">الفريق الثاني</div><div id="scoreTeam2" class="sideValue">0</div></div>
+    </div>
+  </div>
+
+  <div id="overlayLayer" class="overlay hidden"><div class="overlayCard glass"><button class="closeX" onclick="closeOverlay()">×</button><div id="overlayTitle" class="qrTitle">QR</div><img id="overlayQr" class="qrImage" alt="QR"><div id="overlayLink" class="qrLink"></div></div></div>
+  <audio id="joinSound" src="/sounds/join.mp3" preload="auto"></audio>
+  <audio id="winSound" src="/sounds/win.mp3" preload="auto"></audio>
+  <div id="soundBtn" class="soundBtn" onclick="enableSound()">🔊 اضغط لتفعيل الصوت</div>
+<script>
+const socket = createRoomSocket();
+let redirected=false;
+const els = {statusText: document.getElementById("statusText"),introQrView: document.getElementById("introQrView"),introHostQr: document.getElementById("introHostQr"),introHostLink: document.getElementById("introHostLink"),lobbyView: document.getElementById("lobbyView"),gameView: document.getElementById("gameView"),teamName1: document.getElementById("teamName1"),teamName2: document.getElementById("teamName2"),teamCount1: document.getElementById("teamCount1"),teamCount2: document.getElementById("teamCount2"),statTotal: document.getElementById("statTotal"),statTeam1: document.getElementById("statTeam1"),statTeam2: document.getElementById("statTeam2"),statUnassigned: document.getElementById("statUnassigned"),scoreTeamName1: document.getElementById("scoreTeamName1"),scoreTeamName2: document.getElementById("scoreTeamName2"),scoreTeam1: document.getElementById("scoreTeam1"),scoreTeam2: document.getElementById("scoreTeam2"),teamPlayers1: document.getElementById("teamPlayers1"),teamPlayers2: document.getElementById("teamPlayers2"),unassignedPlayers: document.getElementById("unassignedPlayers"),colorView: document.getElementById("colorView"),mafiaView: document.getElementById("mafiaView"),gameNameText: document.getElementById("gameNameText"),gameHintText: document.getElementById("gameHintText"),targetColorLabel: document.getElementById("targetColorLabel"),targetColorChip: document.getElementById("targetColorChip"),roundNow: document.getElementById("roundNow"),sentCount: document.getElementById("sentCount"),countdownText: document.getElementById("countdownText"),resultsWrap: document.getElementById("resultsWrap"),scoreboard: document.getElementById("scoreboard"),winnerTeamText: document.getElementById("winnerTeamText"),winnerPointsText: document.getElementById("winnerPointsText"),fastestCorrectText: document.getElementById("fastestCorrectText"),winnerImg: document.getElementById("winnerImg"),mafiaPhaseText: document.getElementById("mafiaPhaseText"),mafiaNightNumber: document.getElementById("mafiaNightNumber"),mafiaAliveCount: document.getElementById("mafiaAliveCount"),mafiaDeadCount: document.getElementById("mafiaDeadCount"),mafiaMainMessage: document.getElementById("mafiaMainMessage"),mafiaSecondaryMessage: document.getElementById("mafiaSecondaryMessage"),mafiaAliveList: document.getElementById("mafiaAliveList"),mafiaDeadList: document.getElementById("mafiaDeadList"),overlayLayer: document.getElementById("overlayLayer"),overlayTitle: document.getElementById("overlayTitle"),overlayQr: document.getElementById("overlayQr"),overlayLink: document.getElementById("overlayLink")};
+function escapeHtml(str = "") {return String(str).replace(/[&<>"']/g, (m) => ({"&": "&amp;","<": "&lt;",">": "&gt;",'"': "&quot;","'": "&#39;"}[m]));}
+function renderNames(players) {
+  const t1 = players.filter((p) => p.team === "team1");
+  const t2 = players.filter((p) => p.team === "team2");
+  const noTeam = players.filter((p) => !p.team);
+  els.teamCount1.textContent = `${t1.length} لاعب${t1.length===1?'':'ين'}`;
+  els.teamCount2.textContent = `${t2.length} لاعب${t2.length===1?'':'ين'}`;
+  els.statTotal.textContent = players.length;
+  els.statTeam1.textContent = t1.length;
+  els.statTeam2.textContent = t2.length;
+  els.statUnassigned.textContent = noTeam.length;
+  els.teamPlayers1.innerHTML = t1.length ? t1.map((p) => `<div class="nameBox">${escapeHtml(p.name)}</div>`).join("") : `<div class="smallName">لا يوجد لاعبين بعد</div>`;
+  els.teamPlayers2.innerHTML = t2.length ? t2.map((p) => `<div class="nameBox">${escapeHtml(p.name)}</div>`).join("") : `<div class="smallName">لا يوجد لاعبين بعد</div>`;
+  els.unassignedPlayers.innerHTML = noTeam.length ? noTeam.map((p) => `<div class="smallName">${escapeHtml(p.name)}</div>`).join("") : `<div class="smallName">تم توزيع الجميع</div>`;
+}
+function renderMode(appState, state){
+  const showGame=["game_selected","game_select","game_running","game_results"].includes(appState.currentView);
+  const hasHost=Array.isArray(state?.hosts) && state.hosts.length>0;
+  const introDismissed=!!appState.introDismissed || hasHost;
+  const showIntro=!showGame && !introDismissed;
+  const showLobby=!showGame && introDismissed;
+  els.introQrView.classList.toggle("hidden",!showIntro);
+  els.lobbyView.classList.toggle("hidden",!showLobby);
+  els.gameView.classList.toggle("hidden",!showGame);
+  els.introQrView.style.display=showIntro?"grid":"none";
+  els.lobbyView.style.display=showLobby?"grid":"none";
+  els.gameView.style.display=showGame?"grid":"none";
+  const hideScores=appState.selectedGame==="mafia";
+  els.gameView.classList.toggle("noScores",hideScores);
+}
+function openOverlay(title,url){const full=url.startsWith("http")?url:(window.location.origin+url);els.overlayTitle.textContent=title;els.overlayLink.textContent=full;els.overlayQr.src=`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(full)}`;els.overlayLayer.classList.remove("hidden");}
+function closeOverlay(){socket.emit("hideOverlay");} window.closeOverlay=closeOverlay;
+function buildFullUrl(path){return window.location.origin + withRoom(path);} 
+function renderIntroQrs(){const hostUrl=buildFullUrl('/host');els.introHostLink.textContent=hostUrl;els.introHostQr.src=`https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(hostUrl)}`;}
+window.copyIntroLink=async function(){const url=buildFullUrl('/host');try{ await navigator.clipboard.writeText(url); }catch(e){}};
+window.openPreviewLink=function(){const url=buildFullUrl('/host');window.open(url,'_blank');};
+function renderColor(state){const appState=state.appState||{};const color=(state.games||{}).color||{};els.colorView.classList.remove("hidden");els.mafiaView.classList.add("hidden");els.gameNameText.textContent=appState.selectedGameLabel||"صيد اللون";els.gameHintText.textContent=color.phaseLabel||"التجهيز";els.targetColorLabel.textContent=(color.phase==='briefing' && color.targetColorName)?`اللون الحالي: ${color.targetColorName}`:'';els.targetColorChip.classList.toggle("hidden", !(color.phase==='briefing' && color.targetColorHex));if(color.targetColorHex) els.targetColorChip.style.background=color.targetColorHex;els.roundNow.textContent=color.round||0;els.countdownText.textContent=color.secondsLeft>0?color.secondsLeft:'--';els.sentCount.textContent=(color.submissions||[]).length||0;const result=color.lastRoundResult;els.resultsWrap.classList.toggle("hidden", !result);if(result){els.scoreboard.innerHTML=(result.scoreboard||[]).map((r,i)=>`<div class="scoreRow"><span>${i+1}. ${escapeHtml(r.name||'')}</span><span>${r.points||0} نقطة</span><span>${r.correct===true?'✅':'❌'}</span></div>`).join("");els.winnerTeamText.textContent=`الفريق الفائز: ${result.winnerTeamName||'—'}`;els.winnerPointsText.textContent=`نقاط الجولة: ${result.winnerPoints||0}`;els.fastestCorrectText.textContent=result.fastestCorrect?`أسرع إجابة صحيحة: ${result.fastestCorrect.name}`:'لا توجد إجابة صحيحة';if(result.fastestCorrect && result.fastestCorrect.image){els.winnerImg.classList.remove('hidden');els.winnerImg.src=result.fastestCorrect.image;}else{els.winnerImg.classList.add('hidden');}}}
+function renderMafia(state){const mafia=(state.games||{}).mafia||{};const players=state.players||[];const alive=players.filter(p=>p.isAlive);const dead=players.filter(p=>!p.isAlive);els.colorView.classList.add("hidden");els.mafiaView.classList.remove("hidden");els.mafiaPhaseText.textContent=mafia.phaseLabel||'التجهيز';els.mafiaNightNumber.textContent=mafia.round||0;els.mafiaAliveCount.textContent=alive.length;els.mafiaDeadCount.textContent=dead.length;els.mafiaMainMessage.textContent=mafia.phaseLabel||'بانتظار البدء';els.mafiaSecondaryMessage.textContent=mafia.winner==='mafia'?'فازت المافيا':mafia.winner==='citizens'?'فاز المواطنون':(mafia.statusText||'');els.mafiaAliveList.innerHTML=alive.length?alive.map(p=>`<div class="scoreRow">${escapeHtml(p.name)}</div>`).join(''):'<div class="scoreRow">لا يوجد</div>';els.mafiaDeadList.innerHTML=dead.length?dead.map(p=>`<div class="scoreRow">${escapeHtml(p.name)}</div>`).join(''):'<div class="scoreRow">لا يوجد</div>';}
+socket.on("stateUpdate",(state)=>{const appState=state.appState||{};const players=state.players||[];const teamNames=state.teamNames||{team1:"الفريق الأول",team2:"الفريق الثاني"};const teamScores=state.teamScores||{team1:0,team2:0};const hostActive=Array.isArray(state.hosts) && state.hosts.length>0;els.statusText.textContent=((appState.introDismissed||hostActive) ? (players.length ? (appState.statusText||"الفرق جاهزة") : "بانتظار دخول اللاعبين") : "امسح QR التحكم لبدء الجلسة");els.teamName1.textContent=teamNames.team1;els.teamName2.textContent=teamNames.team2;els.scoreTeamName1.textContent=teamNames.team1;els.scoreTeamName2.textContent=teamNames.team2;els.scoreTeam1.textContent=teamScores.team1||0;els.scoreTeam2.textContent=teamScores.team2||0;renderNames(players);renderIntroQrs();renderMode(appState,state);if(appState.selectedGame==='color') renderColor(state); else if(appState.selectedGame==='mafia') renderMafia(state);const overlayState=appState.overlayState||{type:"none"};if(overlayState.type==="player" && overlayState.url) openOverlay("QR اللاعبين",overlayState.url); else if(overlayState.type==="host" && overlayState.url) openOverlay("QR التحكم",overlayState.url); else els.overlayLayer.classList.add("hidden");if(!redirected){const game=appState.selectedGame||'';const phase=appState.gamePhase||'';const view=appState.currentView||'';if(game==='color' && (view!=='lobby' || phase)){ redirected=true; window.location.replace(withRoom('/games/color/screen')); return; }if(game==='mafia' && (view!=='lobby' || phase)){ redirected=true; window.location.replace(withRoom('/games/mafia/screen')); return; }if(game==='letters' && (view!=='lobby' || phase)){ redirected=true; window.location.replace(withRoom('/games/letters/screen')); return; }if(game==='outsider' && (view!=='lobby' || phase)){ redirected=true; window.location.replace(withRoom('/games/outsider/screen')); return; }}});
+</script></body></html>

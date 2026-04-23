@@ -1,0 +1,15 @@
+{
+  "name": "challenge-platform-pro",
+  "version": "2.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "redis": "^4.7.1",
+    "@socket.io/redis-adapter": "^8.3.0"
+  }
+}

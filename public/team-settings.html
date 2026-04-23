@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>إعدادات الفرق</title>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Tahoma,Segoe UI,sans-serif;min-height:100vh;color:#fff;
+  background:
+    radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),
+    radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),
+    linear-gradient(135deg,#07111f,#122946)
+}
+.glass{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:28px;box-shadow:0 18px 50px rgba(0,0,0,.28);backdrop-filter:blur(14px)}
+.top{position:sticky;top:0;padding:14px 18px;background:rgba(4,14,28,.58);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08);z-index:10}
+.bar{max-width:1760px;margin:0 auto;display:grid;grid-template-columns:70px 1fr 70px;align-items:center}
+.back{width:52px;height:52px;border:none;border-radius:18px;background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.16);font-size:26px;font-weight:900;cursor:pointer}
+.title{text-align:center;font-size:34px;font-weight:900}
+.menuPanel{position:fixed;top:88px;right:18px;width:300px;padding:14px;z-index:95}.menuBtns{display:flex;flex-direction:column;gap:10px}.hidden{display:none!important}
+.page{padding:18px;min-height:calc(100vh - 82px)}
+.wrap{max-width:1760px;margin:0 auto;display:grid;grid-template-columns:420px 1fr;gap:18px;min-height:100%}
+.card{padding:22px}
+.h2{font-size:28px;font-weight:900;margin:0 0 12px}.sub{color:rgba(255,255,255,.78);line-height:1.9}
+.input{width:100%;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;outline:none}
+.btn{border:none;border-radius:18px;padding:12px 16px;font-size:15px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#3c7dff,#625dff)}
+.btn.red{background:linear-gradient(135deg,#ff8da1,#ef476f)}.btn.green{background:linear-gradient(135deg,#47d98b,#0ea35b)}.btn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16)}
+.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;height:100%}
+.zone{padding:18px;border-radius:28px;border:1px solid rgba(255,255,255,.14);min-height:760px}
+.zone.red{background:linear-gradient(135deg, rgba(255,118,146,.16), rgba(239,71,111,.10))}
+.zone.blue{background:linear-gradient(135deg, rgba(91,160,255,.16), rgba(35,108,255,.10))}
+.zoneTitle{text-align:center;font-size:32px;font-weight:900;margin:0 0 14px}
+.list{display:grid;grid-template-columns:1fr;gap:10px}
+.player{padding:16px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.name{font-size:20px;font-weight:900}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.empty{padding:16px;border-radius:16px;border:1px dashed rgba(255,255,255,.16);text-align:center;color:rgba(255,255,255,.62)}
+@media (max-width:1280px){.wrap,.teams{grid-template-columns:1fr}.zone{min-height:auto}}
+</style></head><body>
+<div class="top"><div class="bar"><button class="back" onclick="location.href=withRoom('/host')">←</button><div class="title">إعدادات الفرق</div><button class="back" onclick="toggleMenu()">☰</button></div></div><div id="menuPanel" class="menuPanel glass hidden"><div class="menuBtns"><button class="btn ghost" style="width:100%" onclick="location.href=withRoom('/host')">العودة إلى لوحة التحكم</button><button class="btn red" style="width:100%" onclick="location.href=withRoom('/games')">الانتقال إلى الألعاب</button></div></div>
+<div class="page"><div class="wrap"><div class="glass card"><h2 class="h2">أسماء الفرق</h2><div class="sub">عدّل أسماء الفرق من هنا، ثم احفظ. ويمكنك أيضًا نقل اللاعب للفريق الآخر أو طرده من الصفحة.</div><div style="height:14px"></div><div class="row"><input id="team1Input" class="input" placeholder="اسم الفريق الأول"><button class="btn" onclick="saveName('team1')">حفظ</button></div><div style="height:10px"></div><div class="row"><input id="team2Input" class="input" placeholder="اسم الفريق الثاني"><button class="btn" onclick="saveName('team2')">حفظ</button></div><div style="height:14px"></div><button class="btn green" style="width:100%" onclick="socket.emit('randomizeTeams')">تقسيم عشوائي</button><div style="height:18px"></div><h2 class="h2">دخول اللاعبين</h2><div class="sub">اعرض QR اللاعبين على شاشة العرض أو انسخ الرابط المباشر لهم.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><button class="btn" onclick="socket.emit('showPlayerQr')">إظهار QR اللاعبين</button><button class="btn ghost" onclick="copyPlayerLink()">نسخ رابط اللاعبين</button><button class="btn ghost" style="grid-column:1/-1" onclick="socket.emit('hideOverlay')">إخفاء QR من الشاشة</button></div></div><div class="glass card"><div class="teams"><div class="zone red"><h3 id="team1Title" class="zoneTitle">الفريق الأول</h3><div id="team1List" class="list"></div></div><div class="zone blue"><h3 id="team2Title" class="zoneTitle">الفريق الثاني</h3><div id="team2List" class="list"></div></div></div></div></div></div>
+<script>
+const socket=createRoomSocket();socket.emit('registerHost',{page:'team-settings'});
+let teamNames={team1:'الفريق الأحمر',team2:'الفريق الأزرق'};
+function toggleMenu(){document.getElementById('menuPanel').classList.toggle('hidden')}
+document.addEventListener('click',(e)=>{const p=document.getElementById('menuPanel');if(!p.classList.contains('hidden')&&!p.contains(e.target)&&!e.target.closest('.back'))p.classList.add('hidden');});
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function saveName(teamKey){const v=document.getElementById(teamKey==='team1'?'team1Input':'team2Input').value.trim(); if(v) socket.emit('renameTeam',{teamKey,teamName:v});}
+function moveToOther(player){ socket.emit('assignPlayerTeam',{playerId:player.playerId, team: player.team==='team1'?'team2':'team1'}); }
+function removePlayer(id){ socket.emit('removePlayer',{playerId:id}); }
+function card(p){ return `<div class="player"><div class="name">${esc(p.name)}</div><div class="actions"><button class="btn ghost" onclick='moveToOther(${JSON.stringify({playerId:'__ID__',team:'__TEAM__'})})'.replace('__ID__','${p.playerId}').replace('__TEAM__','${p.team}')>نقل اللاعب</button><button class="btn red" onclick="removePlayer('${p.playerId}')">طرد اللاعب</button></div></div>`; }
+function copyPlayerLink(){navigator.clipboard?.writeText(location.origin+withRoom('/player')).catch?.(()=>{});}
+socket.on('stateUpdate',(state)=>{teamNames=state.teamNames||teamNames;document.getElementById('team1Input').value=teamNames.team1;document.getElementById('team2Input').value=teamNames.team2;document.getElementById('team1Title').textContent=teamNames.team1;document.getElementById('team2Title').textContent=teamNames.team2;const players=state.players||[];const t1=players.filter(p=>p.team==='team1');const t2=players.filter(p=>p.team==='team2');document.getElementById('team1List').innerHTML=t1.length?t1.map(p=>`<div class="player"><div class="name">${esc(p.name)}</div><div class="actions"><button class="btn ghost" onclick="socket.emit('assignPlayerTeam',{playerId:'${p.playerId}',team:'team2'})">نقل اللاعب</button><button class="btn red" onclick="socket.emit('removePlayer',{playerId:'${p.playerId}'})">طرد اللاعب</button></div></div>`).join(''):'<div class="empty">لا يوجد لاعبون هنا</div>';document.getElementById('team2List').innerHTML=t2.length?t2.map(p=>`<div class="player"><div class="name">${esc(p.name)}</div><div class="actions"><button class="btn ghost" onclick="socket.emit('assignPlayerTeam',{playerId:'${p.playerId}',team:'team1'})">نقل اللاعب</button><button class="btn red" onclick="socket.emit('removePlayer',{playerId:'${p.playerId}'})">طرد اللاعب</button></div></div>`).join(''):'<div class="empty">لا يوجد لاعبون هنا</div>';});
+</script></body></html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>لوحة التحكم</title><script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;min-height:100vh;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,#07111f,#122946);display:flex;align-items:center;justify-content:center;padding:20px}
+.wrap{width:min(1180px,100%)}.glass{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:30px;box-shadow:0 18px 50px rgba(0,0,0,.28);backdrop-filter:blur(14px)}.card{padding:28px}
+.title{text-align:center;font-size:clamp(42px,6vw,74px);font-weight:900;margin:0}.sub{text-align:center;color:rgba(255,255,255,.8);line-height:1.9;margin:12px 0 24px}
+.roomBadge{margin:16px auto 0;display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);font-weight:900}.roomBadge span{opacity:.75;font-size:14px}.roomBadge strong{font-size:22px;letter-spacing:2px}
+.layout{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.opt{padding:28px;text-decoration:none;color:#fff;display:block}.opt h2{margin:0 0 10px;font-size:32px}.opt p{margin:0;color:rgba(255,255,255,.76);line-height:1.9}.cta{margin-top:16px;display:inline-block;padding:12px 16px;border-radius:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);font-weight:900}
+.side{padding:24px}.sideTitle{font-size:28px;font-weight:900;margin:0 0 10px}.sideSub{color:rgba(255,255,255,.75);line-height:1.9;margin:0 0 16px}
+.actionGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.btn{border:none;border-radius:18px;padding:14px 16px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#3c7dff,#625dff)}.btn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}.btn.green{background:linear-gradient(135deg,#47d98b,#0ea35b)}
+.qrPanel{margin-top:16px;padding:18px;border-radius:24px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}.qrTitle{font-size:20px;font-weight:900;margin:0 0 10px}.qrLink{direction:ltr;word-break:break-all;font-size:13px;color:#bfdbfe;background:rgba(255,255,255,.06);padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10)}.note{margin-top:12px;color:rgba(255,255,255,.70);line-height:1.8;font-size:14px}
+@media (max-width:900px){.layout,.grid,.actionGrid{grid-template-columns:1fr}}
+</style></head><body><div class="wrap"><div class="glass card"><h1 class="title">لوحة التحكم</h1><div class="sub">من هنا تبدأ اللعب، تفتح شاشة العرض، وتدير الغرفة بسرعة من مكان واحد.</div><div style="text-align:center"><div class="roomBadge"><span>كود الغرفة</span><strong id="roomCode">----</strong></div></div>
+<div class="layout">
+  <div class="grid">
+    <a class="glass opt" href="#" onclick="location.href=withRoom('/games');return false;"><h2>بدء اللعب</h2><p>قائمة الألعاب، وداخل كل لعبة زر بدء اللعب وزر إعدادات اللعبة.</p><span class="cta">دخول</span></a>
+    <a class="glass opt" href="#" onclick="location.href=withRoom('/team-settings');return false;"><h2>إعدادات الفرق</h2><p>تعديل أسماء الفرق، نقل اللاعبين بين الفريقين، وطرد أي لاعب من الصفحة.</p><span class="cta">دخول</span></a>
+  </div>
+  <div class="glass side">
+    <h2 class="sideTitle">وصول سريع للشاشة</h2>
+    <p class="sideSub">افتح شاشة العرض على الشاشة الكبيرة، أو انسخ روابط الغرفة بسرعة من الأزرار التالية.</p>
+    <div class="actionGrid">
+      <button class="btn green" onclick="openScreen()">فتح شاشة العرض</button>
+      <button class="btn ghost" onclick="copyLink('screen')">نسخ رابط الشاشة</button>
+      <button class="btn ghost" onclick="copyLink('player')">نسخ رابط اللاعبين</button>
+      <button class="btn ghost" onclick="copyRoomCode()">نسخ كود الغرفة</button>
+      <button class="btn ghost" onclick="copyLink('host')">نسخ رابط التحكم</button>
+      <button class="btn ghost" onclick="location.href=withRoom('/team-settings')">إعدادات الفرق</button>
+    </div>
+  </div>
+</div></div></div><script>
+(async()=>{
+  let room=getRoomCode();
+  if(!room){ window.location.replace('/dashboard'); return; }
+  localStorage.setItem('challenge_last_room', room);
+  document.getElementById('roomCode').textContent=room;
+  const socket=createRoomSocket();
+  socket.emit('registerHost',{page:'host-home'}); socket.emit('forceLobbyView');
+  const base=location.origin;
+  const links={screen:base+withRoom('/'),host:base+withRoom('/host'),player:base+withRoom('/player')};
+  window.copyRoomCode=async function(){ try{ await navigator.clipboard.writeText(room); }catch(e){} };
+  window.copyLink=async function(kind){ try{ await navigator.clipboard.writeText(links[kind]||''); }catch(e){} };
+  window.openScreen=function(){ window.open(withRoom('/'),'_blank'); };
+})();
+</script></body></html>

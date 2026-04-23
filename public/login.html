@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>دخول العميل</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;min-height:100vh;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,#07111f,#122946);display:flex;align-items:center;justify-content:center;padding:20px}.card{width:min(560px,100%);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:30px;box-shadow:0 18px 50px rgba(0,0,0,.28);backdrop-filter:blur(14px);padding:28px}.title{text-align:center;font-size:44px;font-weight:900;margin:0 0 8px}.sub{text-align:center;color:rgba(255,255,255,.78);line-height:1.9;margin:0 0 20px}.field{margin:0 0 14px}.label{display:block;margin-bottom:8px;font-weight:800;color:rgba(255,255,255,.86)}.input{width:100%;padding:16px 18px;border-radius:18px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:17px;outline:none}.btn{width:100%;border:none;border-radius:18px;padding:16px 18px;font-size:18px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#3c7dff,#625dff);margin-top:8px}.links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}.links a{color:#cfe3ff;text-decoration:none;font-weight:800}.msg{min-height:24px;margin-top:12px;color:#ffd6de;font-weight:800;text-align:center}.chip{margin:0 auto 18px;display:inline-flex;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:900}</style>
+</head><body><div class="card"><div style="text-align:center"><div class="chip">دخول العميل</div></div><h1 class="title">ساحة التحدي</h1><p class="sub">سجل دخولك بحسابك حتى ترجع مباشرة إلى غرفتك الثابتة وتشغل الألعاب من لوحة العميل.</p><div class="field"><label class="label">الإيميل</label><input id="email" class="input" type="email" autocomplete="username"></div><div class="field"><label class="label">كلمة المرور</label><input id="password" class="input" type="password" autocomplete="current-password"></div><button class="btn" onclick="login()">دخول</button><div id="msg" class="msg"></div><div class="links"><a href="/register">إنشاء حساب جديد</a><a href="/lobby">دخول برقم الجلسة</a></div></div><script>
+const msg=document.getElementById('msg');
+const tokenKey='challenge_user_token';
+function setToken(t){localStorage.setItem(tokenKey,t)}
+function normalizeRoom(v=''){return String(v||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)}
+function authHeaders(){const t=localStorage.getItem(tokenKey)||'';return t?{'Authorization':'Bearer '+t}:{}}
+const redirectTarget=(new URLSearchParams(location.search).get('redirect')||sessionStorage.getItem('challenge_after_login_redirect')||'').trim();
+function safeRedirect(userRoom=''){
+  if(!redirectTarget){
+    return userRoom ? ('/?room='+encodeURIComponent(userRoom)) : '/dashboard';
+  }
+  if(redirectTarget.startsWith('/host')||redirectTarget.startsWith('/team-settings')||redirectTarget.startsWith('/games')){
+    try {
+      const u=new URL(redirectTarget, location.origin);
+      if(userRoom) u.searchParams.set('room', userRoom);
+      return u.pathname + u.search + u.hash;
+    } catch(e){
+      if(!userRoom) return redirectTarget;
+      const sep=redirectTarget.includes('?')?'&':'?';
+      return redirectTarget + sep + 'room=' + encodeURIComponent(userRoom);
+    }
+  }
+  return userRoom ? ('/?room='+encodeURIComponent(userRoom)) : '/dashboard';
+}
+function goAfterLogin(userRoom=''){ sessionStorage.removeItem('challenge_after_login_redirect'); if(userRoom) localStorage.setItem('challenge_last_room', userRoom); location.href = safeRedirect(userRoom); }
+async function check(){const t=localStorage.getItem(tokenKey); if(!t) return; try{const res=await fetch('/api/auth/me',{headers:authHeaders()}); if(res.ok){const data=await res.json(); const room=normalizeRoom(data?.user?.roomId||''); goAfterLogin(room);} else {localStorage.removeItem(tokenKey);}}catch(e){localStorage.removeItem(tokenKey);}}
+async function login(){msg.textContent='جارِ تسجيل الدخول...'; const email=document.getElementById('email').value.trim(); const password=document.getElementById('password').value; try{const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})}); const data=await res.json(); if(!res.ok){msg.textContent=data.message||'تعذر تسجيل الدخول'; return;} setToken(data.token); const room=normalizeRoom(data?.user?.roomId||''); goAfterLogin(room);}catch(e){msg.textContent='تعذر الاتصال بالخادم';}}
+document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});check();
+</script></body></html>

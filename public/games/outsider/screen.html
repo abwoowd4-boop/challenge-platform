@@ -1,0 +1,44 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>برا السالفة - الشاشة</title><script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,#07111f,#122946);min-height:100vh}.page{padding:24px}.wrap{max-width:1540px;margin:0 auto}.glass{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:32px;box-shadow:0 20px 54px rgba(0,0,0,.28);backdrop-filter:blur(14px)}.hero{padding:34px;text-align:center}.title{font-size:clamp(52px,7vw,96px);font-weight:900;margin:0}.sub{margin-top:14px;color:rgba(255,255,255,.82);font-size:24px;line-height:1.8}.phase{margin-top:16px;font-size:36px;font-weight:900}.chips{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px}.chip{padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:900}.panel{margin-top:18px;padding:24px;border-radius:26px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:28px;line-height:1.8}.players{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}.player{padding:16px 18px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:22px;font-weight:900;text-align:center}.player.focus{box-shadow:0 0 0 1px rgba(255,255,255,.16),0 0 30px rgba(99,179,255,.16)}.result{margin-top:18px;padding:20px;border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.12);font-size:34px;font-weight:900;text-align:center}.result.win{background:linear-gradient(180deg, rgba(255,209,102,.22), rgba(255,255,255,.06))}.hidden{display:none!important}</style></head><body><div class="page"><div class="wrap"><div class="glass hero"><h1 class="title">برا السالفة</h1><div id="phaseLabel" class="phase">بانتظار البداية</div><div class="chips"><div id="categoryText" class="chip">التصنيف: اكلات</div><div id="roundText" class="chip">الجولة 0</div><div id="votesText" class="chip">الأصوات 0</div></div><div id="statusText" class="sub">اسألوا بذكاء... واحد فقط لا يعرف السر.</div><div id="mainPanel" class="panel">يبدأ المضيف الجولة ثم يمر الجميع على دور الأسئلة الإجباري، وبعدها تفتح الأسئلة للجميع ثم يبدأ التصويت، ثم يحصل المرشح على فرصة أخيرة لتخمين الكلمة.</div><div id="resultBox" class="result hidden"></div><div id="playersBox" class="players"></div></div></div></div><script>
+const socket=createRoomSocket();
+let lastPhase=''; let lastResult='';
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function playerName(players,id){return (players.find(p=>p.playerId===id)||{}).name||'—'}
+socket.on('stateUpdate',(state)=>{
+  const g=(state.games||{}).outsider||{}; const players=state.players||[];
+  document.getElementById('phaseLabel').textContent=g.phaseLabel||'بانتظار البداية';
+  document.getElementById('categoryText').textContent=`التصنيف: ${g.category||'اكلات'}`;
+  document.getElementById('roundText').textContent=`الجولة ${g.round||0}`;
+  document.getElementById('votesText').textContent=`الأصوات ${Object.keys(g.votes||{}).length}`;
+  document.getElementById('statusText').textContent=g.statusText||'اسألوا بذكاء... واحد فقط لا يعرف السر.';
+  if(g.phase && g.phase!==lastPhase){
+    const labels={mandatory:'ابدأوا الأسئلة',open:'أسئلة مفتوحة',voting:'وقت التصويت',guessing:'تخمين الكلمة',finished:'إعلان النتيجة'};
+    GameFX.phaseOverlay(labels[g.phase]||g.phaseLabel||'برا السالفة',{duration:850});
+    if(g.phase==='voting') GameFX.reveal();
+    if(g.phase==='finished'){ GameFX.win(); GameFX.celebrate(); }
+    lastPhase=g.phase;
+  }
+  let text='يبدأ المضيف الجولة ثم يمر الجميع على دور الأسئلة الإجباري، وبعدها تفتح الأسئلة للجميع ثم يبدأ التصويت، ثم يحصل المرشح على فرصة أخيرة لتخمين الكلمة.';
+  let focusIds=[];
+  if(g.phase==='mandatory'){
+    const pair=(g.mandatoryPairs||[])[g.currentPairIndex]||null;
+    if(pair){ text=`الدور الحالي: <b>${esc(playerName(players,pair.askerId))}</b> يسأل <b>${esc(playerName(players,pair.targetId))}</b> سؤالاً إجابته نعم أو لا.`; focusIds=[pair.askerId,pair.targetId]; }
+  } else if(g.phase==='open'){
+    text='الأسئلة مفتوحة الآن على الجميع. أي لاعب يستطيع سؤال أي لاعب آخر، ثم عند الجاهزية يبدأ التصويت.';
+  } else if(g.phase==='voting'){
+    text='بدأ التصويت. كل لاعب يختار الشخص الذي يظنه برا السالفة.';
+  } else if(g.phase==='guessing'){
+    text=`تم منح <b>${esc(g.outsiderRevealedName||'برا السالفة')}</b> فرصة أخيرة لتخمين الكلمة من الخيارات.`;
+  } else if(g.phase==='finished'){
+    text=g.winnerText||g.statusText||'انتهت الجولة.';
+  }
+  document.getElementById('mainPanel').innerHTML=text;
+  const resultBox=document.getElementById('resultBox');
+  const resultText=g.winnerText||'';
+  resultBox.classList.toggle('hidden', !resultText);
+  resultBox.classList.toggle('win', !!resultText);
+  resultBox.textContent=resultText;
+  if(resultText && resultText!==lastResult){ GameFX.flash(resultBox); lastResult=resultText; }
+  document.getElementById('playersBox').innerHTML=players.length?players.map(p=>`<div class="player ${focusIds.includes(p.playerId)?'focus':''}">${esc(p.name)}</div>`).join(''):'<div class="player">لا يوجد لاعبون</div>';
+});
+socket.on('gameEnded',()=>location.replace(withRoom('/')));
+</script></body></html>

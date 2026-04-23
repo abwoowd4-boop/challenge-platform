@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شاشة عرض المافيا</title>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0; width:100vw; height:100vh; overflow:hidden; color:#fff;
+  font-family:Tahoma,Segoe UI,sans-serif;
+  background:
+    radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),
+    radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),
+    linear-gradient(135deg,#07111f,#122946);
+}
+.wrap{
+  width:100%; height:100%;
+  padding:18px 24px;
+  display:flex; flex-direction:column;
+}
+.hero{text-align:center;font-size:clamp(44px,4.8vw,88px);font-weight:900;margin:0}
+.sub{text-align:center;color:rgba(255,255,255,.75);margin-top:6px;font-size:16px}
+.topStat{
+  margin:14px auto 0;width:min(1240px,100%);padding:14px 20px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);
+  border-radius:999px;text-align:center;font-size:24px;font-weight:900;
+}
+.layout{
+  flex:1;
+  margin-top:22px;
+  display:grid;
+  grid-template-columns:minmax(270px,.95fr) minmax(520px,700px) minmax(270px,.95fr);
+  gap:14px;
+  min-height:0;
+}
+.card{
+  background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);
+  border-radius:28px;box-shadow:0 22px 58px rgba(0,0,0,.28);
+  backdrop-filter:blur(14px);padding:18px;
+  min-height:0;
+  display:flex; flex-direction:column;
+}
+.title{font-size:24px;font-weight:900;margin:0 0 12px}
+.list{
+  flex:1; min-height:0;
+  display:grid; gap:10px;
+  overflow:auto;
+}
+.player{
+  padding:14px 16px;border-radius:20px;background:rgba(255,255,255,.08);
+  font-size:18px;font-weight:800;border:1px solid rgba(255,255,255,.12);line-height:1.5
+}
+.dead{opacity:.48;text-decoration:line-through}
+.center{text-align:center;justify-content:flex-start}
+.phase{font-size:clamp(58px,5.7vw,104px);font-weight:900;line-height:1.05}
+.winner{margin-top:10px;color:#ffd166;font-size:32px;font-weight:900}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.pill{
+  padding:14px;border-radius:20px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);font-size:18px;font-weight:900
+}
+.timer{font-size:clamp(44px,4.2vw,70px);font-weight:900;margin-top:14px;color:#ffd166}
+.notice{
+  margin-top:16px;padding:14px;border-radius:20px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);line-height:1.8;font-size:20px
+}
+.flash{animation:flashIn .55s ease}
+@keyframes flashIn{0%{transform:scale(.96);opacity:.2}100%{transform:scale(1);opacity:1}}
+.timer.hot{color:#ffb3c1;animation:timerPulse .8s ease-in-out infinite}
+@keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.wrap.winMode .center{background:linear-gradient(180deg, rgba(255,209,102,.18), rgba(255,255,255,.06));}
+.wrap.winMode #winnerText{animation:flashIn .5s ease both;}
+@media (max-width:1380px){
+  body{overflow:auto;height:auto}
+  .wrap{height:auto;min-height:100vh}
+  .layout{grid-template-columns:1fr}
+  .list{max-height:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="hero">لعبة المافيا</h1>
+  <div class="sub">شاشة العرض</div>
+  <div id="statusText" class="topStat">بانتظار بداية اللعبة</div>
+
+  <div class="layout">
+    <div class="card">
+      <h2 class="title">اللاعبون الأحياء</h2>
+      <div id="aliveList" class="list"></div>
+    </div>
+
+    <div class="card center">
+      <div id="phaseText" class="phase">التجهيز</div>
+      <div id="timerBox" class="timer">—</div>
+
+      <div class="row">
+        <div class="pill">عدد المواطنين الحاليين<br><span id="citizenCount">0</span></div>
+        <div class="pill">عدد الموتى<br><span id="deadCount">0</span></div>
+      </div>
+
+      <div class="row">
+        <div class="pill">عدد المافيا الحاليين<br><span id="mafiaCount">0</span></div>
+        <div class="pill">الجولة الحالية<br><span id="roundText">0</span></div>
+      </div>
+
+      <div id="revealBox" class="notice">بانتظار بدء اللعبة.</div>
+      <div id="winnerText" class="winner"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="title">جميع اللاعبين</h2>
+      <div id="allList" class="list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="phaseOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9998;background:rgba(4,10,22,.60);backdrop-filter:blur(6px)">
+  <div id="phaseOverlayText" style="font-size:96px;font-weight:900;color:#fff;text-shadow:0 16px 28px rgba(0,0,0,.30);transform:scale(.9);opacity:.1;transition:all .25s ease">بدأت الجولة</div>
+</div>
+
+<script>
+const socket=createRoomSocket();
+socket.emit('screenReady');
+let lastSig=''; let lastPhaseSig='';
+const aliveList=document.getElementById('aliveList'),allList=document.getElementById('allList'),revealBox=document.getElementById('revealBox');
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function byId(players,id){return players.find(p=>p.playerId===id)?.name||'—'}
+function showPhaseOverlay(text){ GameFX.reveal();
+  const box=document.getElementById('phaseOverlay');
+  const t=document.getElementById('phaseOverlayText');
+  box.style.display='flex';
+  t.style.opacity='.05'; t.style.transform='scale(.88)';
+  requestAnimationFrame(()=>{ t.textContent=text; t.style.opacity='1'; t.style.transform='scale(1)'; });
+  setTimeout(()=>{ box.style.display='none'; }, 1100);
+}
+
+socket.on('stateUpdate',(state)=>{
+  const mafia=(state.games||{}).mafia||{};
+  const players=state.players||[];
+  const alive=players.filter(p=>p.isAlive);
+  const mafiaAlive=alive.filter(p=>['mafia','silentMafia'].includes(p.role)).length;
+  const dead=players.filter(p=>!p.isAlive).length;
+  const citizens=Math.max(0,alive.length-mafiaAlive);
+
+  document.getElementById('statusText').textContent=state.appState?.statusText||'بانتظار بداية اللعبة';
+  document.getElementById('phaseText').textContent=mafia.phaseLabel||'التجهيز';
+  const timerEl=document.getElementById('timerBox');
+  const timerSecs=(mafia.timer&&mafia.timer.secondsLeft)||0;
+  timerEl.textContent=(mafia.timer&&mafia.timer.mode&&mafia.timer.mode!=='idle')?`${timerSecs} ثانية`:'—';
+  timerEl.classList.toggle('hot', !!(mafia.timer&&mafia.timer.mode&&mafia.timer.mode!=='idle'&&timerSecs<=5)); if(mafia.timer&&mafia.timer.mode&&mafia.timer.mode!=='idle'&&timerSecs<=5) GameFX.warning();
+  document.querySelector('.wrap').classList.toggle('winMode', !!mafia.winner);
+  document.getElementById('citizenCount').textContent=citizens;
+  document.getElementById('deadCount').textContent=dead;
+  document.getElementById('mafiaCount').textContent=mafiaAlive;
+  document.getElementById('roundText').textContent=mafia.round||0;
+  document.getElementById('winnerText').textContent=mafia.winner==='mafia'?'فازت المافيا':mafia.winner==='citizens'?'فاز المواطنون':'';
+
+  const phaseSig=`${mafia.phase||''}-${mafia.round||0}`; if(phaseSig!==lastPhaseSig && mafia.phase && mafia.phase!=='setup'){ showPhaseOverlay(mafia.phaseLabel||''); if(mafia.winner){ GameFX.win(); GameFX.celebrate(); } else if(['night','investigation','day'].includes(mafia.phase)){ GameFX.start(); } lastPhaseSig=phaseSig; }
+  let msg='بانتظار بدء اللعبة.';
+  const votedId=(mafia.voteResult||{}).selectedPlayerId;
+  const votedPlayer=players.find(p=>p.playerId===votedId);
+
+  if(mafia.phase==='night') msg='حل الليل الآن، والمقدم يحدد نتائج الليل.';
+  else if(mafia.phase==='investigation') msg=`بدأت جولة التحقيق. الوقت المتبقي ${mafia.timer?.secondsLeft||0} ثانية.`;
+  else if(mafia.phase==='day'){
+    const day=mafia.daySummary||{};
+    if(day.savedId) msg=`تمت حماية ${esc(byId(players,day.savedId))} هذه الليلة.`;
+    else if(day.killedId) msg=`تم قتل ${esc(byId(players,day.killedId))} هذه الليلة.`;
+    else msg='لم يتم قتل أحد هذه الليلة.';
+    if(day.silencedId) msg+=` وتم تسكيت ${esc(byId(players,day.silencedId))}.`;
+  } else if(mafia.phase==='voting') {
+    msg='جاري اختيار اللاعب الذي سيتم إقصاؤه.';
+  } else if(mafia.phase==='results' || (votedPlayer && !votedPlayer.isAlive)) {
+    if(votedPlayer){
+      const isMafia=['mafia','silentMafia'].includes(votedPlayer.role);
+      msg=`تم إقصاء ${esc(votedPlayer.name)} - ${isMafia ? 'كان من المافيا' : 'ليس من المافيا'}.`;
+    }
+  }
+  if(mafia.winner==='mafia') msg='انتهت اللعبة - فازت المافيا.';
+  if(mafia.winner==='citizens') msg='انتهت اللعبة - فاز المواطنون.';
+
+  const sig=[mafia.phase,mafia.timer?.secondsLeft||0,mafia.daySummary?.killedId||'',mafia.daySummary?.savedId||'',votedId||'',mafia.winner||''].join('|');
+  if(sig!==lastSig){ revealBox.classList.remove('flash'); void revealBox.offsetWidth; revealBox.classList.add('flash'); lastSig=sig; }
+  revealBox.textContent=msg;
+
+  aliveList.innerHTML=alive.map(p=>`<div class="player">${esc(p.name)}${p.isSilenced?' - مُسكّت':''}</div>`).join('')||'<div class="player">لا يوجد</div>';
+  allList.innerHTML=players.map(p=>`<div class="player ${!p.isAlive?'dead':''}">${esc(p.name)}</div>`).join('')||'<div class="player">لا يوجد</div>';
+});
+socket.on('gameEnded',()=>{ window.location.replace(withRoom('/')) });
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لاعب المافيا</title>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;min-height:100vh;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,#07111f,#122946);display:flex;align-items:center;justify-content:center;padding:18px}
+.glass{width:min(92vw,460px);padding:22px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:30px;box-shadow:0 22px 58px rgba(0,0,0,.28);backdrop-filter:blur(14px)}
+.title{text-align:center;margin:0;font-size:32px;font-weight:900}
+.sub{text-align:center;color:rgba(255,255,255,.78);line-height:1.8;margin:10px 0 18px}
+.hidden{display:none!important}.input{width:100%;padding:15px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;outline:none;font-size:15px}
+.btn{width:100%;border:none;border-radius:18px;padding:15px 18px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#63b3ff,#3c7dff);margin-top:12px}
+.grid{display:grid;gap:12px}.heroTag{margin:0 auto 12px;display:inline-flex;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:900;color:rgba(255,255,255,.8)}
+.infoCard{padding:16px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;overflow:hidden}.infoCard:before{content:"";position:absolute;inset:auto 0 0 0;height:2px;background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent)}
+.label{font-size:15px;color:rgba(255,255,255,.7);margin-bottom:8px}.value{font-size:26px;font-weight:900}.roleValue{color:#ffd166}.statusAlive{color:#47d98b}.statusDead{color:#ff8da1}.statusMuted{color:#ffd166}
+.infoCard.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(255,209,102,.10)}.heroTag.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 24px rgba(255,255,255,.12)}</style>
+</head>
+<body>
+<div class="glass">
+  <div class="heroTag">أنت داخل اللعبة</div>
+  <h1 class="title">لعبة المافيا</h1>
+  <div id="entryBox" class="hidden"><div class="sub">اكتب اسمك للدخول إلى اللعبة</div><input id="nameInput" class="input" placeholder="اكتب اسمك هنا" /><button class="btn" onclick="joinGame()">دخول</button></div>
+  <div id="playerBox" class="hidden"><div class="grid"><div class="infoCard"><div class="label">اسم اللاعب</div><div id="nameText" class="value">—</div></div><div class="infoCard"><div class="label">الدور في اللعبة</div><div id="roleText" class="value roleValue">بانتظار التوزيع</div></div><div class="infoCard"><div class="label">الحالة</div><div id="statusText" class="value">بانتظار بدء اللعبة</div></div></div></div>
+</div>
+<script>
+const socket=createRoomSocket();
+function getOrCreatePlayerId(){let id=localStorage.getItem('platform_player_id');if(!id){id='p_'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('platform_player_id',id);}return id;}
+const playerId=getOrCreatePlayerId(); let myName=localStorage.getItem('platform_player_name')||''; let registered=false;
+const roleLabel=(r='')=>({mafia:'مافيا',doctor:'دكتور',detective:'المحقق',mayor:'عمدة المواطنين',sniper:'قناص المواطنين',rope:'لاعب بالحبلين',silentMafia:'مافيا التسكيت',citizen:'مواطن'}[r]||r||'—');
+const els={entryBox:document.getElementById('entryBox'),playerBox:document.getElementById('playerBox'),nameInput:document.getElementById('nameInput'),nameText:document.getElementById('nameText'),roleText:document.getElementById('roleText'),statusText:document.getElementById('statusText')};
+let lastRole='', lastAlive=true;
+// ابدأ بواجهة نظيفة بدون وميض لمربع الاسم
+els.entryBox.classList.add('hidden');
+els.playerBox.classList.add('hidden');
+if(myName){
+  els.nameInput.value=myName;
+  els.playerBox.classList.remove('hidden');
+}else{
+  els.entryBox.classList.remove('hidden');
+}
+function registerCurrentPlayer(){ if(!myName||registered) return; socket.emit('registerPlayer',{name:myName,playerId}); }
+function joinGame(){const name=(els.nameInput.value||'').trim();if(!name) return;myName=name;localStorage.setItem('platform_player_name',name); registered=false; registerCurrentPlayer();}
+socket.on('connect',()=>{ if(myName){ registered=false; registerCurrentPlayer(); } });
+socket.on('playerRegistered',({name})=>{ GameFX.click(); myName=name; localStorage.setItem('platform_player_name',name); registered=true; els.entryBox.classList.add('hidden');els.playerBox.classList.remove('hidden');});
+socket.on('stateUpdate',(state)=>{const players=state.players||[];const mafia=state.games?.mafia||{};const me=players.find(p=>p.playerId===playerId)||players.find(p=>p.name===myName);if(!me) return;els.entryBox.classList.add('hidden');els.playerBox.classList.remove('hidden');els.nameText.textContent=me.name||'—';els.roleText.textContent=me.role?roleLabel(me.role):'بانتظار التوزيع';if(me.role && me.role!==lastRole){ GameFX.phaseOverlay('دورك: '+roleLabel(me.role), {duration:1000}); GameFX.reveal(); lastRole=me.role; }let status='بانتظار بدء اللعبة';let cls='value';if(!me.isAlive){status='خارج اللعبة';cls+=' statusDead'; if(lastAlive){ GameFX.phaseOverlay('تم إقصاؤك', {duration:900}); GameFX.warning(); } }else if(me.isSilenced){status='حي - مُسكّت هذه الجولة';cls+=' statusMuted';}else{status=mafia.phaseLabel||'حي';cls+=' statusAlive';} lastAlive=!!me.isAlive;els.statusText.textContent=status;els.statusText.className=cls;document.querySelectorAll('.infoCard').forEach(c=>c.classList.toggle('live', !!me.isAlive));document.querySelector('.heroTag').classList.toggle('live', !!me.isAlive);});
+socket.on('gameEnded',()=>{ window.location.replace(withRoom('/player')) });
+</script>
+</body>
+</html>

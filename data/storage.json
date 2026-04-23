@@ -1,0 +1,186 @@
+{
+  "users": [
+    {
+      "name": "Test User",
+      "email": "test@example.com",
+      "passwordHash": "scrypt:318325ba25bb71c003a03525cef33d78:0b3a31af71f0bad382be985d9b337ee8433a4fe8982ae3f8967e878860e3f691ada7944a30d1102b996434ff9f89614c6a3044b7a2adc2964da36c10532bde0e",
+      "activated": true,
+      "roomId": "019745",
+      "activationCode": "DEMO-PRO-2026",
+      "plan": "pro",
+      "isActive": true,
+      "createdAt": 1776885634589,
+      "updatedAt": 1776885634678
+    },
+    {
+      "name": "a",
+      "email": "a",
+      "passwordHash": "scrypt:6249880a0489244035e7ade8cb04bbd9:935bcf45f68a503059d93cbe60156e70cfadf1e76d08540decf2b953812b085406c1e6b254da7df9ca05a7b84db00945427d8de3c030c855ffdc22f8ee2d2ad8",
+      "activated": true,
+      "roomId": "7A15CD",
+      "activationCode": "PRO-WNNH-JMYJ",
+      "plan": "pro",
+      "isActive": true,
+      "createdAt": 1776896107071,
+      "updatedAt": 1776896152095
+    }
+  ],
+  "activationCodes": [
+    {
+      "code": "DEMO-PRO-2026",
+      "plan": "pro",
+      "used": true,
+      "usedBy": "test@example.com",
+      "usedAt": 1776885634660,
+      "createdAt": 1776885623434
+    },
+    {
+      "code": "PRO-WNNH-JMYJ",
+      "plan": "pro",
+      "used": true,
+      "usedBy": "a",
+      "usedAt": 1776896152085,
+      "createdAt": 1776896146865
+    }
+  ],
+  "roomDefinitions": [
+    {
+      "roomId": "019745",
+      "ownerEmail": "test@example.com",
+      "label": "Test User",
+      "isPermanent": true,
+      "createdAt": 1776938122237,
+      "updatedAt": 1776942108093,
+      "lastOpenedAt": 1776942108093
+    },
+    {
+      "roomId": "7A15CD",
+      "ownerEmail": "a",
+      "label": "a",
+      "isPermanent": true,
+      "createdAt": 1776938122238,
+      "updatedAt": 1776942406975,
+      "lastOpenedAt": 1776942406975
+    }
+  ],
+  "roomSnapshots": [
+    {
+      "roomId": "019745",
+      "savedAt": 1776938122237,
+      "state": {
+        "teamNames": {
+          "team1": "الفريق الأحمر",
+          "team2": "الفريق الأزرق"
+        },
+        "app": {
+          "selectedGame": "",
+          "selectedGameLabel": "",
+          "currentView": "lobby",
+          "statusText": "بانتظار اختيار اللعبة",
+          "gamePhase": "",
+          "currentRound": 0,
+          "introDismissed": false,
+          "overlayState": {
+            "type": "none",
+            "url": ""
+          }
+        },
+        "games": {
+          "mafia": {
+            "settings": {
+              "mafiaCount": 1,
+              "investigationSeconds": 45,
+              "defenseSeconds": 30,
+              "enableMayor": false,
+              "enableSniper": false,
+              "enableRopePlayer": false,
+              "enableSilentMafia": false
+            }
+          },
+          "color": {
+            "settings": {
+              "rounds": 3,
+              "prepSeconds": 10,
+              "playSeconds": 20
+            },
+            "recentColors": []
+          },
+          "letters": {
+            "gridSize": 5,
+            "settings": {
+              "answerSeconds": 10,
+              "otherTeamSeconds": 7,
+              "frameTopBottom": "#62c924",
+              "frameSides": "#ff8a3d",
+              "team1Color": "#51c84d",
+              "team2Color": "#ff8a3d"
+            }
+          },
+          "outsider": {
+            "category": "اكلات",
+            "optionsCount": 8
+          }
+        }
+      }
+    },
+    {
+      "roomId": "7A15CD",
+      "savedAt": 1776942406975,
+      "state": {
+        "teamNames": {
+          "team1": "الفريق الأحمر",
+          "team2": "الفريق الأزرق"
+        },
+        "app": {
+          "selectedGame": "",
+          "selectedGameLabel": "",
+          "currentView": "lobby",
+          "statusText": "بانتظار اختيار اللعبة",
+          "gamePhase": "",
+          "currentRound": 0,
+          "introDismissed": true,
+          "overlayState": {
+            "type": "none",
+            "url": ""
+          }
+        },
+        "games": {
+          "mafia": {
+            "settings": {
+              "mafiaCount": 1,
+              "investigationSeconds": 45,
+              "defenseSeconds": 30,
+              "enableMayor": false,
+              "enableSniper": false,
+              "enableRopePlayer": false,
+              "enableSilentMafia": false
+            }
+          },
+          "color": {
+            "settings": {
+              "rounds": 3,
+              "prepSeconds": 10,
+              "playSeconds": 20
+            },
+            "recentColors": []
+          },
+          "letters": {
+            "gridSize": 5,
+            "settings": {
+              "answerSeconds": 10,
+              "otherTeamSeconds": 7,
+              "frameTopBottom": "#62c924",
+              "frameSides": "#ff8a3d",
+              "team1Color": "#51c84d",
+              "team2Color": "#ff8a3d"
+            }
+          },
+          "outsider": {
+            "category": "اكلات",
+            "optionsCount": 8
+          }
+        }
+      }
+    }
+  ]
+}

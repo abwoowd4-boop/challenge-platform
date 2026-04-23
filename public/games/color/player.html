@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>لاعب صيد اللون</title>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<style>
+*{box-sizing:border-box} :root{--bg1:#07111f;--bg2:#122946}
+body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;min-height:100vh;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2));padding:14px;display:flex;justify-content:center}
+.hidden{display:none!important}.glass{width:min(100%,430px);padding:18px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:26px;box-shadow:0 18px 46px rgba(0,0,0,.28);backdrop-filter:blur(14px);align-self:flex-start}.title{text-align:center;margin:0;font-size:31px;font-weight:900}.sub{text-align:center;color:rgba(255,255,255,.78);margin-top:8px;line-height:1.7}.input{width:100%;padding:15px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:16px;outline:none}.btn{border:none;border-radius:18px;padding:16px 18px;font-size:17px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#3c7dff,#625dff);width:100%}.btn.green{background:linear-gradient(135deg,#47d98b,#0ea35b)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.stack{display:grid;gap:12px}.topStats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.scoreBox{padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);text-align:center;font-weight:900}.wait{padding:18px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);text-align:center;line-height:1.8;margin-top:14px}.gamePanel{margin-top:14px;padding:16px;border-radius:24px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.bigMsg{text-align:center;font-size:24px;font-weight:900}.countdown{text-align:center;font-size:42px;font-weight:900;color:#ffd166;margin-top:8px}.note{text-align:center;margin-top:12px;color:rgba(255,255,255,.68);font-size:13px;line-height:1.8}.statusChip{margin-top:12px;padding:12px 14px;border-radius:16px;text-align:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-weight:800}.cameraWrap{margin-top:14px;border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.14);background:#08111f}video{width:100%;display:block;aspect-ratio:3/4;object-fit:cover}.actions{display:grid;gap:10px;margin-top:14px}
+#playerIntroOverlay{position:fixed;inset:0;z-index:99998;display:none;align-items:center;justify-content:center;background:rgba(4,10,22,.82);backdrop-filter:blur(6px)}
+@keyframes playerPulse{0%{transform:scale(.88);opacity:.3}100%{transform:scale(1);opacity:1}} .gamePanel.glow{box-shadow:0 0 0 1px rgba(255,255,255,.10),0 0 36px rgba(98,93,255,.18)} .countdown.pulse{animation:playerPulse .35s ease}
+.statusChip.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(71,217,139,.18)}.wait.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(79,124,255,.18)}body.hotZone{background:radial-gradient(circle at center, rgba(239,71,111,.14), transparent 34%),radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2))}</style></head>
+<body>
+<div class="glass">
+  <h1 class="title">صيد اللون</h1>
+  <div id="welcome" class="sub">اكتب اسمك ثم ادخل اللعبة</div>
+
+  <div id="entryBox" class="stack hidden" style="margin-top:14px">
+    <input id="nameInput" class="input" placeholder="اكتب اسمك هنا" />
+    <button class="btn" onclick="joinGame()">دخول</button>
+  </div>
+
+  <div id="playerBox" class="hidden">
+    <div class="topStats">
+      <div class="scoreBox">نقاطك<br><span id="myScore">0</span></div>
+      <div class="scoreBox">حالة الجولة<br><span id="stageMini">انتظار</span></div>
+    </div>
+
+    <div id="waitPanel" class="wait">خلك جاهز، الجولة ستبدأ قريبًا</div>
+
+    <div id="gamePanel" class="gamePanel hidden">
+      <div id="bigMsg" class="bigMsg">خلك جاهز للجولة</div>
+      <div id="countdown" class="countdown">--</div>
+      <div id="targetColorText" class="statusChip">راقب شاشة العرض لمعرفة اللون</div>
+      <div id="cameraWrap" class="cameraWrap hidden"><video id="cameraPreview" autoplay playsinline></video></div>
+      <div class="actions">
+        <button id="openCameraBtn" class="btn hidden" onclick="openCamera()">فتح الكاميرا</button>
+        <button id="sendBtn" class="btn green hidden" onclick="captureAndSend()">التقاط وإرسال</button>
+      </div>
+      <div class="note">يمكنك الإرسال مرة واحدة فقط في كل جولة</div>
+    </div>
+  </div>
+</div>
+<div id="playerIntroOverlay"><div style="text-align:center;color:#fff"><div style="font-size:30px;font-weight:900;margin-bottom:16px">استعد للجولة</div><div id="playerIntroCount" style="font-size:120px;font-weight:900;line-height:1;transform:scale(.8);opacity:.1;transition:all .2s ease">3</div></div></div>
+<script>
+const socket=createRoomSocket();
+const entryBox=document.getElementById('entryBox'), playerBox=document.getElementById('playerBox'), waitPanel=document.getElementById('waitPanel'), gamePanel=document.getElementById('gamePanel');
+const nameInput=document.getElementById('nameInput'), welcome=document.getElementById('welcome');
+const bigMsg=document.getElementById('bigMsg'), countdown=document.getElementById('countdown'), targetColorText=document.getElementById('targetColorText');
+const cameraPreview=document.getElementById('cameraPreview'), openCameraBtn=document.getElementById('openCameraBtn'), sendBtn=document.getElementById('sendBtn'), cameraWrap=document.getElementById('cameraWrap');
+const playerIntroOverlay=document.getElementById('playerIntroOverlay'), playerIntroCount=document.getElementById('playerIntroCount'), myScore=document.getElementById('myScore'), stageMini=document.getElementById('stageMini');
+function getOrCreatePlayerId(){let id=localStorage.getItem('platform_player_id');if(!id){id='p_'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('platform_player_id',id);}return id;}
+const playerId=getOrCreatePlayerId();
+let myName=localStorage.getItem('platform_player_name')||''; let registered=false; let submittedThisRound=false; let stream=null; let roundTimer=null; let playerAudioCtx=null; let soundUnlocked=false; let lastRoundSig=''; let lastPhaseSeen='';
+// ابدأ بدون وميض لمربع الاسم
+entryBox.classList.add('hidden');
+playerBox.classList.add('hidden');
+if(myName){
+  nameInput.value=myName;
+  welcome.classList.add('hidden');
+  playerBox.classList.remove('hidden');
+}else{
+  welcome.classList.remove('hidden');
+  entryBox.classList.remove('hidden');
+}
+function registerCurrentPlayer(){ if(!myName||registered) return; socket.emit('registerPlayer',{name:myName,playerId}); }
+function showOnly(mode){ if(mode==='wait'){ waitPanel.classList.remove('hidden'); gamePanel.classList.add('hidden'); } else { waitPanel.classList.add('hidden'); gamePanel.classList.remove('hidden'); } }
+function clearLocalTimer(){ if(roundTimer){ clearInterval(roundTimer); roundTimer=null; } }
+function flashCountdown(){ countdown.classList.remove('pulse'); void countdown.offsetWidth; countdown.classList.add('pulse'); }
+function animatePanel(){ gamePanel.classList.remove('glow'); void gamePanel.offsetWidth; gamePanel.classList.add('glow'); }
+function startCountdown(endAt, endText){ clearLocalTimer(); const tick=()=>{ const left=Math.max(0, Math.ceil((endAt-Date.now())/1000)); countdown.textContent=left>0?left:endText; flashCountdown(); if(left<=0){ clearLocalTimer(); } }; tick(); roundTimer=setInterval(tick,1000); }
+function ensureAudio(){ if(playerAudioCtx) return playerAudioCtx; const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return null; playerAudioCtx=new Ctx(); return playerAudioCtx; }
+function successSound(){ GameFX.success(); const ctx=ensureAudio(); if(!ctx) return; const o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(880,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(1320,ctx.currentTime+0.16); g.gain.setValueAtTime(.001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.08,ctx.currentTime+0.02); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+0.18); o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.2); }
+function startIntro(){ GameFX.start(); playerIntroOverlay.style.display='flex'; const steps=['3','2','1','ابدأ']; let i=0; const next=()=>{ playerIntroCount.style.opacity='.05'; playerIntroCount.style.transform='scale(.82)'; requestAnimationFrame(()=>{ playerIntroCount.textContent=steps[i]; playerIntroCount.style.opacity='1'; playerIntroCount.style.transform='scale(1)'; }); if(i<steps.length-1){ i++; setTimeout(next,650); } else { setTimeout(()=>{ playerIntroOverlay.style.display='none'; },600); } }; next(); }
+async function openCamera(){ try{ if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ alert('الكاميرا غير مدعومة في هذا المتصفح'); return; } stopCamera(); stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }, audio:false }); cameraPreview.srcObject=stream; cameraWrap.classList.remove('hidden'); await cameraPreview.play().catch(()=>{}); sendBtn.classList.remove('hidden'); openCameraBtn.classList.add('hidden'); }catch(err){ console.error(err); alert('تعذر فتح الكاميرا. تأكد من السماح بها في المتصفح واستخدام رابط آمن.'); } }
+function stopCamera(){ if(stream){ try{stream.getTracks().forEach(t=>t.stop());}catch(e){} stream=null; } cameraPreview.pause(); cameraPreview.srcObject=null; cameraWrap.classList.add('hidden'); sendBtn.classList.add('hidden'); openCameraBtn.classList.add('hidden'); }
+function joinGame(){ const n=(nameInput.value||'').trim(); if(!n) return; myName=n; localStorage.setItem('platform_player_name', n); registered=false; registerCurrentPlayer(); }
+function captureAndSend(){ if(submittedThisRound || !stream) return; const video=cameraPreview; const sourceWidth=video.videoWidth||720; const sourceHeight=video.videoHeight||1280; const maxWidth=480; const scale=Math.min(1, maxWidth/sourceWidth); const canvas=document.createElement('canvas'); canvas.width=Math.round(sourceWidth*scale); canvas.height=Math.round(sourceHeight*scale); const ctx2=canvas.getContext('2d'); ctx2.drawImage(video,0,0,canvas.width,canvas.height); const image=canvas.toDataURL('image/jpeg',0.58); socket.emit('colorSubmitPhoto',{playerId,name:myName,image}); submittedThisRound=true; bigMsg.textContent='جاري الإرسال...'; targetColorText.textContent='يتم ضغط الصورة وإرسالها'; }
+socket.on('connect',()=>{ if(myName){ registered=false; registerCurrentPlayer(); } });
+socket.on('playerRegistered',({name})=>{ myName=name; localStorage.setItem('platform_player_name',name); registered=true; welcome.classList.add('hidden'); entryBox.classList.add('hidden'); playerBox.classList.remove('hidden'); });
+socket.on('submissionAccepted',()=>{ stopCamera(); bigMsg.textContent='تم الإرسال بنجاح'; targetColorText.textContent='بانتظار انتهاء الجولة'; successSound(); stageMini.textContent='أرسلت'; });
+socket.on('submissionRejected',({message})=>{submittedThisRound=false; alert(message||'تعذر الإرسال');});
+socket.on('colorRoundSetup',(data)=>{ const sig=`${data.targetColorName||''}-${data.prepEndsAt||0}`; if(sig!==lastRoundSig){ startIntro(); lastRoundSig=sig; } showOnly('game'); animatePanel(); stopCamera(); submittedThisRound=false; stageMini.textContent='استعداد'; bigMsg.textContent='استعد للجولة'; targetColorText.textContent='احفظ اللون الظاهر على الشاشة ثم جهّز كاميرتك'; openCameraBtn.classList.add('hidden'); startCountdown(data.prepEndsAt||Date.now(),'ابدأ'); });
+socket.on('colorRoundStarted',(data)=>{ GameFX.phaseOverlay('ابدأ الآن', {duration:800}); GameFX.start(); submittedThisRound=false; showOnly('game'); animatePanel(); stageMini.textContent='تصوير'; bigMsg.textContent='وقت التصوير بدأ'; targetColorText.textContent='افتح الكاميرا ثم التقط أقرب لون مطابق'; openCameraBtn.classList.remove('hidden'); sendBtn.classList.add('hidden'); startCountdown(data.roundEndsAt||Date.now(),'انتهت'); });
+socket.on('colorRoundReview',()=>{ GameFX.reveal(); clearLocalTimer(); stopCamera(); showOnly('game'); animatePanel(); stageMini.textContent='مراجعة'; bigMsg.textContent='انتهى وقت التصوير'; targetColorText.textContent='جاري مراجعة الصور واختيار الأسرع'; openCameraBtn.classList.add('hidden'); sendBtn.classList.add('hidden'); });
+socket.on('gameEnded',()=>{ window.location.replace(withRoom('/player')) });
+socket.on('stateUpdate',(state)=>{ const c=(state.games||{}).color||{};
+  if(c.phase && c.phase!==lastPhaseSeen){ if(c.phase==='waiting_next_round') GameFX.reveal(); if(c.phase==='finished'){ GameFX.win(); GameFX.celebrate(); } lastPhaseSeen=c.phase; } const players=state.players||[]; const playerScores=state.playerScores||{}; if(!myName) return; const me=players.find(p=>p.playerId===playerId)||players.find(p=>p.name===myName); if(me){ welcome.classList.add('hidden'); entryBox.classList.add('hidden'); playerBox.classList.remove('hidden'); } myScore.textContent=(playerScores[myName]||0); document.body.classList.toggle('hotZone', !!(c.secondsLeft>0 && c.secondsLeft<=3 && ['briefing','playing'].includes(c.phase)));
+  targetColorText.classList.toggle('live', c.phase==='playing');
+  waitPanel.classList.toggle('live', ['waiting_next_round','finished'].includes(c.phase));
+  if(c.phase==='finished'){ showOnly('wait'); waitPanel.textContent='انتهت اللعبة، انتظر الجولة أو اللعبة التالية'; stageMini.textContent='انتهت'; return; } if(c.phase==='waiting_next_round'){ showOnly('wait'); waitPanel.textContent=`انتهت الجولة، انتظر بدء الجولة ${(c.round||0)+1}`; stageMini.textContent='انتظار'; return; } if(!c.started){ showOnly('wait'); waitPanel.textContent='خلك جاهز، الجولة ستبدأ قريبًا'; stageMini.textContent='انتظار'; } });
+</script></body></html>

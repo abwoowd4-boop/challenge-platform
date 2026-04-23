@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة المالك + عداد مباشر</title>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --bg1:#050b16;--bg2:#0a1730;--bg3:#0d1f3e;
+      --glass:rgba(9,20,41,.74);--glass2:rgba(255,255,255,.05);
+      --line:rgba(255,255,255,.10);--text:#eef5ff;--muted:rgba(238,245,255,.74);--muted2:rgba(238,245,255,.54);
+      --blue:#279bff;--violet:#625dff;--green:#18c98f;--orange:#ffb340;--red:#ff6b7a;
+      --shadow:0 20px 60px rgba(0,0,0,.34);
+    }
+    body{
+      margin:0;font-family:Tahoma,"Segoe UI",sans-serif;min-height:100vh;color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(94,122,255,.13), transparent 30%),
+        radial-gradient(circle at bottom left, rgba(0,203,162,.09), transparent 26%),
+        linear-gradient(145deg,var(--bg1) 0%,var(--bg2) 42%,var(--bg3) 100%);
+      padding:18px
+    }
+    .wrap{width:min(1520px,100%);margin:0 auto}
+    .glass{background:var(--glass);border:1px solid var(--line);border-radius:30px;box-shadow:var(--shadow);backdrop-filter:blur(16px)}
+    .hero{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;padding:28px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:13px;font-weight:900;color:#bad5ff}
+    .title{font-size:46px;font-weight:900;margin:12px 0 10px;line-height:1.15}
+    .sub{margin:0;color:var(--muted);line-height:1.95;max-width:850px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{border:none;border-radius:18px;padding:14px 18px;font-size:15px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 14px 28px rgba(50,92,255,.2)}
+    .btn.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);box-shadow:none}
+    .btn.warn{background:linear-gradient(135deg,#ff8a3d,#ff5f7b)}
+    .stats{display:grid;grid-template-columns:repeat(10,1fr);gap:14px;margin-top:18px}
+    .card{padding:24px}
+    .stat{padding:18px;border-radius:24px;background:var(--glass2);border:1px solid rgba(255,255,255,.09)}
+    .statLabel{font-size:13px;color:rgba(238,245,255,.6);font-weight:800;margin-bottom:8px}
+    .statValue{font-size:28px;font-weight:900}
+    .statHint{font-size:11px;color:var(--muted2);margin-top:6px}
+    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:18px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+    .sectionTitle{font-size:15px;color:rgba(238,245,255,.68);font-weight:900;margin-bottom:6px}
+    .small{font-size:12px;color:var(--muted2);line-height:1.8}
+    .tableWrap{overflow:auto}
+    .table{width:100%;border-collapse:collapse;font-size:14px}
+    .table th,.table td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.09);text-align:right;vertical-align:top;white-space:nowrap}
+    .table th{color:rgba(238,245,255,.62);font-size:13px}
+    .badge{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);font-weight:900;font-size:12px}
+    .good{color:#8ef0c9}.warnText{color:#ffd07a}.bad{color:#ff9aa6}
+    .miniBtn{border:none;border-radius:12px;padding:9px 10px;font-size:12px;font-weight:900;cursor:pointer;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
+    .tableActions{display:flex;gap:8px;flex-wrap:wrap}
+    @media (max-width:1350px){.stats{grid-template-columns:repeat(5,1fr)}}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}.title{font-size:38px}}
+    @media (max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:520px){.stats{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="glass hero">
+      <div>
+        <div class="eyebrow">لوحة المالك + عداد مباشر</div>
+        <h1 class="title">مراقبة مباشرة للغرف واللاعبين والسيرفر</h1>
+        <p class="sub">هذه نسخة مستقلة محسنة من لوحة المالك. فيها عداد حي للغرف واللاعبين والجلسات الجارية وحالة Redis واستهلاك الذاكرة ووقت تشغيل السيرفر.</p>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" onclick="refreshAll()">تحديث الآن</button>
+        <button class="btn ghost" onclick="copyHiddenLink()">نسخ رابط المالك</button>
+        <button class="btn warn" onclick="logout()">تسجيل الخروج</button>
+      </div>
+    </section>
+
+    <section class="glass card">
+      <div class="stats">
+        <div class="stat"><div class="statLabel">الغرف الحية</div><div id="statRooms" class="statValue">0</div><div class="statHint">عدد الغرف الموجودة بالذاكرة</div></div>
+        <div class="stat"><div class="statLabel">اللاعبين الآن</div><div id="statPlayers" class="statValue">0</div><div class="statHint">مجموع المتصلين الآن</div></div>
+        <div class="stat"><div class="statLabel">الجلسات الجارية</div><div id="statPlaying" class="statValue">0</div><div class="statHint">الغرف التي حالتها playing</div></div>
+        <div class="stat"><div class="statLabel">المستخدمين</div><div id="statUsers" class="statValue">0</div><div class="statHint">إجمالي حسابات العملاء</div></div>
+        <div class="stat"><div class="statLabel">المفعلين</div><div id="statActivated" class="statValue">0</div><div class="statHint">الحسابات المفعلة</div></div>
+        <div class="stat"><div class="statLabel">Redis</div><div id="statRedis" class="statValue">—</div><div class="statHint">حالة الربط الحالية</div></div>
+        <div class="stat"><div class="statLabel">RAM المستهلك</div><div id="statMemory" class="statValue">0 MB</div><div class="statHint">heapUsed</div></div>
+        <div class="stat"><div class="statLabel">RAM الكلية</div><div id="statRss" class="statValue">0 MB</div><div class="statHint">rss</div></div>
+        <div class="stat"><div class="statLabel">وقت التشغيل</div><div id="statUptime" class="statValue">0m</div><div class="statHint">منذ تشغيل السيرفر</div></div>
+        <div class="stat"><div class="statLabel">آخر تحديث</div><div id="statUpdated" class="statValue">—</div><div class="statHint">يحدث تلقائيًا كل 5 ثوانٍ</div></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <section class="glass card">
+        <div class="toolbar">
+          <div>
+            <div class="sectionTitle">الغرف المباشرة</div>
+            <div class="small">عرض كل غرفة مع المالك واللاعبين واللعبة الحالية وآخر نشاط.</div>
+          </div>
+          <div class="small">تحديث تلقائي كل 5 ثوانٍ</div>
+        </div>
+        <div class="tableWrap">
+          <table class="table" id="roomsTable">
+            <thead>
+              <tr>
+                <th>الغرفة</th>
+                <th>المالك</th>
+                <th>اللاعبين</th>
+                <th>الحالة</th>
+                <th>اللعبة</th>
+                <th>آخر نشاط</th>
+                <th>تحكم</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="glass card">
+        <div class="toolbar">
+          <div>
+            <div class="sectionTitle">ملخص النظام</div>
+            <div class="small">مؤشرات سريعة لمتابعة وضع السيرفر أثناء التجربة أو البيع الفعلي.</div>
+          </div>
+        </div>
+        <table class="table">
+          <tbody>
+            <tr><td>الحالة العامة</td><td id="sysHealth">—</td></tr>
+            <tr><td>Socket.IO</td><td id="sysSocket">—</td></tr>
+            <tr><td>عدد المستخدمين</td><td id="sysUsers">0</td></tr>
+            <tr><td>عدد الأكواد</td><td id="sysCodes">0</td></tr>
+            <tr><td>Redis adapter</td><td id="sysRedisAdapter">—</td></tr>
+            <tr><td>منفذ التشغيل</td><td id="sysPort">—</td></tr>
+            <tr><td>Node env</td><td id="sysEnv">—</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </section>
+  </div>
+
+  <script>
+    const ownerKey = 'challenge_owner_token';
+    const hiddenLoginPath = '/admin-mlmol-6644';
+
+    function token(){ return localStorage.getItem(ownerKey) || ''; }
+    function headers(){ return { 'Authorization': 'Bearer ' + token() }; }
+    function safe(v, fallback='—'){ return (v === undefined || v === null || v === '') ? fallback : v; }
+    function mb(v){ return Math.round((Number(v || 0) / 1024 / 1024) * 10) / 10 + ' MB'; }
+    function uptimeText(sec){
+      sec = Math.floor(Number(sec || 0));
+      const d = Math.floor(sec / 86400);
+      const h = Math.floor((sec % 86400) / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      if(d > 0) return d + 'd ' + h + 'h';
+      if(h > 0) return h + 'h ' + m + 'm';
+      return m + 'm';
+    }
+    function formatRelativeTime(ts){
+      if(!ts) return '—';
+      const diff = Date.now() - Number(ts);
+      if(diff < 60000) return 'الآن';
+      const mins = Math.floor(diff / 60000);
+      if(mins < 60) return 'قبل ' + mins + ' د';
+      const hours = Math.floor(mins / 60);
+      if(hours < 24) return 'قبل ' + hours + ' س';
+      return 'قبل ' + Math.floor(hours / 24) + ' يوم';
+    }
+    function roomStateBadge(state){
+      return '<span class="badge">' + safe(state, 'lobby') + '</span>';
+    }
+
+    async function requireOwner(){
+      if(!token()){ location.href = hiddenLoginPath; return false; }
+      try{
+        const res = await fetch('/api/owner/me', { headers: headers() });
+        if(!res.ok){
+          localStorage.removeItem(ownerKey);
+          location.href = hiddenLoginPath;
+          return false;
+        }
+        return true;
+      }catch(e){
+        location.href = hiddenLoginPath;
+        return false;
+      }
+    }
+
+    async function loadOwnerStats(){
+      try{
+        const res = await fetch('/api/owner/stats', { headers: headers() });
+        const data = await res.json();
+        if(!res.ok) return;
+        statUsers.textContent = safe(data?.stats?.users, 0);
+        statActivated.textContent = safe(data?.stats?.activatedUsers, 0);
+        sysUsers.textContent = safe(data?.stats?.users, 0);
+        sysCodes.textContent = safe(data?.stats?.codes, 0);
+      }catch(e){}
+    }
+
+    async function loadMonitor(){
+      try{
+        const res = await fetch('/api/owner/system-monitor', { headers: headers() });
+        const data = await res.json();
+        if(!res.ok) return;
+
+        statRooms.textContent = safe(data.roomsCount, 0);
+        statPlayers.textContent = safe(data.playersCount, 0);
+        statPlaying.textContent = safe(data.playingCount, 0);
+        statRedis.textContent = data.redisEnabled ? 'ON' : 'OFF';
+        statMemory.textContent = mb(data.memory?.heapUsed);
+        statRss.textContent = mb(data.memory?.rss);
+        statUptime.textContent = uptimeText(data.uptimeSeconds);
+        statUpdated.textContent = new Date().toLocaleTimeString('ar-SA');
+
+        sysHealth.innerHTML = data.redisEnabled ? '<span class="good">ممتاز</span>' : '<span class="warnText">جيد</span>';
+        sysSocket.textContent = safe(data.socketStatus, 'online');
+        sysRedisAdapter.textContent = data.redisEnabled ? 'enabled' : 'disabled';
+        sysPort.textContent = safe(data.port, '—');
+        sysEnv.textContent = safe(data.nodeEnv, 'development');
+      }catch(e){}
+    }
+
+    async function loadRooms(){
+      try{
+        const res = await fetch('/api/owner/rooms', { headers: headers() });
+        const data = await res.json();
+        if(!res.ok) return;
+        const tbody = document.querySelector('#roomsTable tbody');
+        tbody.innerHTML = '';
+
+        (data.rooms || []).forEach(r => {
+          const roomId = safe(r.roomId, '');
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${roomId}</strong></td>
+            <td>${safe(r.owner, '—')}</td>
+            <td>${safe(r.players, 0)}</td>
+            <td>${roomStateBadge(r.state)}</td>
+            <td>${safe(r.game, '—')}</td>
+            <td>${formatRelativeTime(r.lastActive)}</td>
+            <td>
+              <div class="tableActions">
+                <button class="miniBtn" onclick="openRoom('${roomId}')">فتح</button>
+                <button class="miniBtn" onclick="copyRoomLink('${roomId}')">نسخ الرابط</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }catch(e){}
+    }
+
+    function openRoom(id){
+      window.open('/?room=' + encodeURIComponent(id), '_blank');
+    }
+
+    async function copyRoomLink(id){
+      const url = location.origin + '/?room=' + encodeURIComponent(id);
+      try{
+        await navigator.clipboard.writeText(url);
+        alert('تم نسخ رابط الغرفة');
+      }catch(e){
+        alert(url);
+      }
+    }
+
+    async function refreshAll(){
+      await Promise.all([loadOwnerStats(), loadMonitor(), loadRooms()]);
+    }
+
+    async function logout(){
+      try{ await fetch('/api/owner/logout', { method:'POST', headers: headers() }); }catch(e){}
+      localStorage.removeItem(ownerKey);
+      location.href = hiddenLoginPath;
+    }
+
+    async function copyHiddenLink(){
+      const url = location.origin + hiddenLoginPath;
+      try{
+        await navigator.clipboard.writeText(url);
+        alert('تم نسخ رابط دخول المالك');
+      }catch(e){
+        alert(url);
+      }
+    }
+
+    (async()=>{
+      if(!await requireOwner()) return;
+      await refreshAll();
+      setInterval(refreshAll, 5000);
+    })();
+  </script>
+</body>
+</html>

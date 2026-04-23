@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شاشة عرض صيد اللون</title>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<style>
+*{box-sizing:border-box} :root{--bg1:#07111f;--bg2:#122946;--muted:rgba(255,255,255,.76)}
+body{margin:0;width:100vw;height:100vh;overflow:hidden;color:#fff;font-family:Tahoma,Segoe UI,sans-serif;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2))}
+.hidden{display:none!important}.wrap{width:100%;height:100%;max-width:1920px;margin:0 auto;padding:clamp(10px,1.1vw,18px);display:grid;grid-template-rows:auto 1fr;gap:clamp(10px,1vw,16px)}.glass{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:26px;box-shadow:0 18px 52px rgba(0,0,0,.28);backdrop-filter:blur(14px)}
+.top{display:flex;align-items:center;justify-content:center;min-height:72px}.hero{font-size:clamp(34px,3.2vw,64px);font-weight:900;text-align:center}.status{display:none}
+.layout{min-height:0;display:grid;grid-template-columns:minmax(220px,.78fr) minmax(0,1.55fr) minmax(220px,.78fr);gap:clamp(10px,.9vw,16px);align-items:stretch}
+.card{padding:clamp(14px,1vw,20px);min-height:0;display:flex;flex-direction:column}.title{font-size:clamp(20px,1.4vw,26px);font-weight:900;margin:0 0 10px}.list{display:grid;gap:10px;overflow:auto}.item{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);font-size:clamp(15px,1vw,19px);font-weight:800}.center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;position:relative;overflow:hidden;padding-block:clamp(12px,1vw,20px)}.phase{font-size:clamp(42px,4.4vw,88px);font-weight:900;line-height:1.02}.timer{font-size:clamp(38px,3.8vw,70px);font-weight:900;color:#ffd166}.notice{font-size:clamp(18px,1.45vw,28px);color:var(--muted);line-height:1.6;max-width:92%}
+.colorStage{width:min(86%,640px);padding:20px;border-radius:30px;background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08)}.colorName{font-size:clamp(24px,2vw,42px);font-weight:900}.colorChip{height:min(24vh,190px);border-radius:30px;border:3px solid rgba(255,255,255,.26);box-shadow:0 0 34px rgba(255,255,255,.18), inset 0 0 32px rgba(255,255,255,.12);margin-top:14px;animation:pulseGlow 1.8s infinite}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(86%,640px)}.pill{padding:14px 12px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:clamp(16px,1.1vw,20px);font-weight:900}.pill span{display:block;margin-top:8px;font-size:clamp(24px,2vw,34px)}
+.scoreRow{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);font-size:clamp(14px,.95vw,18px);font-weight:800}.badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border-radius:999px;background:rgba(255,255,255,.10);margin-left:8px}
+@keyframes pulseGlow{0%{transform:scale(1)}50%{transform:scale(1.018)}100%{transform:scale(1)}}
+@keyframes cardFlash{0%{transform:scale(.98);opacity:.2}100%{transform:scale(1);opacity:1}}
+.flash{animation:cardFlash .45s ease}
+#roundOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999;background:rgba(4,10,22,.78);backdrop-filter:blur(6px)}
+#roundOverlayCount{font-size:min(20vw,180px);font-weight:900;line-height:1;transform:scale(.82);opacity:.1;transition:all .22s ease;text-shadow:0 16px 28px rgba(0,0,0,.30)}
+#resultFlash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle, rgba(255,255,255,.18), transparent 55%);opacity:0;transition:opacity .35s ease;z-index:9998}
+@media (max-width:1380px){body{overflow:auto;height:auto}.wrap{height:auto;min-height:100vh}.layout{grid-template-columns:1fr}.list{max-height:none}.top{min-height:56px}}
+.timer.hot{color:#ff98ad;animation:timerPulse .8s ease-in-out infinite}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="hero">صيد اللون</div>
+  </div>
+
+  <div class="layout">
+    <div class="glass card"><h2 class="title">اللاعبون</h2><div id="playersList" class="list"></div></div>
+
+    <div class="glass card center">
+      <div id="phaseText" class="phase">التجهيز</div>
+      <div id="timerBox" class="timer">—</div>
+      <div id="noticeBox" class="notice">بانتظار بداية الجولة.</div>
+      <div id="colorStage" class="colorStage hidden">
+        <div class="colorName">اللون المطلوب</div>
+        <div id="targetName" style="font-size:clamp(42px,4vw,72px);font-weight:900;margin-top:8px">—</div>
+        <div id="colorChip" class="colorChip"></div>
+      </div>
+      <div class="stats">
+        <div class="pill">الجولة الحالية<span id="roundText">0</span></div>
+        <div class="pill">عدد الذين أرسلوا<span id="sentCount">0</span></div>
+      </div>
+    </div>
+
+    <div class="glass card"><h2 class="title">النتائج</h2><div id="resultsBox" class="list"></div></div>
+  </div>
+</div>
+<div id="roundOverlay"><div style="text-align:center;color:#fff"><div style="font-size:34px;font-weight:900;margin-bottom:20px;color:rgba(255,255,255,.88)">استعدوا للجولة</div><div id="roundOverlayCount">3</div></div></div>
+<div id="resultFlash"></div>
+<script>
+const socket=createRoomSocket(); socket.emit('screenReady');
+let lastSig='', lastRoundSig='', lastResultSig='';
+const noticeBox=document.getElementById('noticeBox'); const roundOverlay=document.getElementById('roundOverlay'); const roundOverlayCount=document.getElementById('roundOverlayCount'); const resultFlash=document.getElementById('resultFlash');
+function flashResult(){ GameFX.reveal(); resultFlash.style.opacity='1'; setTimeout(()=>{ resultFlash.style.opacity='0'; }, 420); }
+function animateCount(text){ roundOverlayCount.style.opacity='.05'; roundOverlayCount.style.transform='scale(.82)'; requestAnimationFrame(()=>{ roundOverlayCount.textContent=text; roundOverlayCount.style.opacity='1'; roundOverlayCount.style.transform='scale(1)'; }); }
+function startRoundOverlay(){ GameFX.start(); roundOverlay.style.display='flex'; const steps=['3','2','1','ابدأ']; let i=0; function next(){ animateCount(steps[i]); if(i<steps.length-1){ i++; setTimeout(next,650); } else { setTimeout(()=>{ roundOverlay.style.display='none'; },600); } } next(); }
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function buildResults(board=[]){ if(!board.length) return '<div class="item">لم تظهر نتائج بعد</div>'; return board.map((r,i)=>`<div class="scoreRow"><span class="badge">${i+1}</span>${esc(r.name||'')} - ${r.points||0} نقطة${typeof r.correct==='boolean' ? (' ' + (r.correct===true?'✅':'❌')) : ''}</div>`).join(''); }
+socket.on('stateUpdate',(state)=>{
+  const color=(state.games||{}).color||{}; const players=state.players||[];
+  document.getElementById('phaseText').textContent=color.phaseLabel||'التجهيز';
+  document.getElementById('timerBox').textContent=color.secondsLeft>0?`${color.secondsLeft} ثانية`:'—';
+  document.getElementById('timerBox').classList.toggle('hot', !!(color.secondsLeft>0 && color.secondsLeft<=3 && ['briefing','playing'].includes(color.phase)));
+  if(color.secondsLeft>0 && color.secondsLeft<=3 && ['briefing','playing'].includes(color.phase)) GameFX.warning();
+  document.getElementById('roundText').textContent=color.round||0;
+  document.getElementById('sentCount').textContent=(color.submissions||[]).length||0;
+  const showColor=color.phase==='briefing' && color.targetColorHex; document.getElementById('colorStage').classList.toggle('hidden', !showColor); if(showColor){ document.getElementById('targetName').textContent=color.targetColorName||'—'; document.getElementById('colorChip').style.background=color.targetColorHex; }
+  const roundSig=`${color.targetColorName||''}-${color.prepEndsAt||0}`; if(color.phase==='briefing' && roundSig!==lastRoundSig){ startRoundOverlay(); lastRoundSig=roundSig; }
+  let msg='بانتظار بداية الجولة.'; if(color.phase==='briefing') msg=`احفظوا اللون جيدًا: ${color.targetColorName||'—'}`; else if(color.phase==='playing') msg='بدأ وقت التصوير الآن — أسرع إجابة صحيحة ستحصل على أعلى نقاط'; else if(color.phase==='reviewing') msg='انتهى وقت التصوير — جاري المراجعة'; else if(color.phase==='waiting_next_round') msg='انتهت الجولة الحالية'; else if(color.phase==='finished') msg=`انتهت اللعبة — الفائز: ${color.finalWinnerName||'—'} (${color.finalWinnerPoints||0} نقطة)`;
+  const sig=[color.phase,color.secondsLeft,color.targetColorName,(color.submissions||[]).length].join('|'); if(sig!==lastSig){ noticeBox.classList.remove('flash'); void noticeBox.offsetWidth; noticeBox.classList.add('flash'); lastSig=sig; }
+  noticeBox.textContent=msg;
+  document.getElementById('playersList').innerHTML=players.length?players.map(p=>`<div class="item">${esc(p.name)}</div>`).join(''):'<div class="item">لا يوجد لاعبون</div>';
+  const result=color.lastRoundResult; if(result && color.phase==='waiting_next_round'){ const sig2=`${color.round||0}-${result.fastestCorrect?.name||''}-${result.winnerTeamName||''}`; if(sig2!==lastResultSig){ flashResult(); GameFX.phaseOverlay('نتائج الجولة', {duration:850}); lastResultSig=sig2; } }
+  if(color.phase==='finished' && result){ GameFX.win(); GameFX.celebrate(); }
+  const board=(color.phase==='finished' && result?.finalScoreboard)?result.finalScoreboard:(result?.scoreboard||[]); document.getElementById('resultsBox').innerHTML=buildResults(board);
+});
+socket.on('gameEnded',()=>{ window.location.replace(withRoom('/')) });
+</script>
+</body></html>

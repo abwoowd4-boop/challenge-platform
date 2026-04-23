@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تشغيل صيد اللون</title>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<style>
+*{box-sizing:border-box} :root{--bg1:#07111f;--bg2:#122946;--glass:rgba(255,255,255,.10);--border:rgba(255,255,255,.14);--muted:rgba(255,255,255,.74);--good:#22c55e;--warn:#f59e0b;--bad:#ef476f;--blue:#4f7cff}
+body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2));min-height:100vh}
+.hidden{display:none!important}.glass{background:var(--glass);border:1px solid var(--border);border-radius:28px;box-shadow:0 20px 54px rgba(0,0,0,.28);backdrop-filter:blur(14px)}
+.top{position:sticky;top:0;z-index:20;padding:14px 18px;background:rgba(4,14,28,.55);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08)}
+.bar{max-width:1460px;margin:0 auto;display:grid;grid-template-columns:72px 1fr 72px;align-items:center}.title{text-align:center;font-size:30px;font-weight:900}.iconBtn{width:52px;height:52px;border:none;border-radius:18px;background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.16);font-size:24px;font-weight:900;cursor:pointer}
+.page{padding:18px}.wrap{max-width:1460px;margin:0 auto;display:grid;gap:18px}.hero{padding:24px;display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:stretch}.heroMain{padding:18px 22px;border-radius:24px;background:linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.03));position:relative;overflow:hidden}.phase{font-size:clamp(28px,3vw,52px);font-weight:900}.timer{font-size:clamp(44px,5vw,82px);font-weight:900;color:#ffd166;margin-top:8px}.muted{color:var(--muted);line-height:1.9}.progress{height:14px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:18px;border:1px solid rgba(255,255,255,.08)}.progress > span{display:block;height:100%;width:0%;background:linear-gradient(90deg,#47d98b,#4f7cff);transition:width .25s ease}
+.heroSide{display:grid;gap:14px}.mini{padding:18px;border-radius:24px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}.mini .lab{color:rgba(255,255,255,.66);font-size:14px}.mini .val{margin-top:6px;font-size:28px;font-weight:900}.colorChip{height:120px;border-radius:28px;border:2px solid rgba(255,255,255,.24);box-shadow:0 0 28px rgba(255,255,255,.18);margin-top:10px}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.card{padding:22px}.h2{font-size:27px;font-weight:900;margin:0 0 12px}.players{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.player{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}.player .name{font-size:18px;font-weight:900}.player .meta{margin-top:6px;color:rgba(255,255,255,.7)}
+.reviewGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.reviewCard{padding:14px;border-radius:22px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);transition:transform .16s ease, box-shadow .16s ease}.reviewCard:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.2)}.reviewCard img{width:100%;height:180px;object-fit:cover;border-radius:16px;background:#08111f;margin-bottom:10px}.row{display:flex;gap:10px;flex-wrap:wrap}.btn{border:none;border-radius:18px;padding:14px 18px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,#3c7dff,#625dff)}.btn.green{background:linear-gradient(135deg,#47d98b,#0ea35b)}.btn.red{background:linear-gradient(135deg,#ff8da1,#ef476f)}.btn.gold{background:linear-gradient(135deg,#ffd166,#ffb703);color:#172033}.btn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16)}.full{width:100%}
+.stateNote{margin-top:10px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);line-height:1.8}.tag{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:900}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.menuPanel{position:fixed;top:88px;right:18px;width:300px;padding:14px;z-index:95}.menuBtns{display:flex;flex-direction:column;gap:10px}
+.podium{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:12px;align-items:end;margin-top:16px}.pod{padding:18px 14px;border-radius:22px;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.pod.first{min-height:180px;background:linear-gradient(180deg, rgba(255,209,102,.26), rgba(255,255,255,.06))}.pod.second{min-height:140px}.pod.third{min-height:120px}.pod .rank{font-size:30px;font-weight:900}.pod .pname{margin-top:10px;font-size:18px;font-weight:900}.pod .pts{margin-top:6px;color:rgba(255,255,255,.75)}
+@media (max-width:1050px){.hero,.grid{grid-template-columns:1fr}} @media (max-width:640px){.bar{grid-template-columns:56px 1fr 56px}.title{font-size:24px}.page{padding:14px}}
+.timer.hot{color:#ff8da1;animation:timePulse .8s ease-in-out infinite}.heroMain.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 40px rgba(79,124,255,.20)}body.hotTime{background:radial-gradient(circle at center, rgba(239,71,111,.16), transparent 34%),radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2))}@keyframes timePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}</style>
+</head>
+<body>
+<div class="top"><div class="bar"><button class="iconBtn" onclick="toggleMenu()">☰</button><div class="title">تشغيل صيد اللون</div><div></div></div></div>
+<div id="menuPanel" class="menuPanel glass hidden"><div class="menuBtns"><button class="btn red full" onclick="socket.emit('colorReset')">إعادة اللعبة</button><button class="btn ghost full" onclick="location.href=withRoom('/games/color/setup')">إعدادات اللعبة</button><button class="btn red full" onclick="exitGame()">الخروج من اللعبة</button></div></div>
+<div class="page"><div class="wrap">
+  <div class="glass hero">
+    <div class="heroMain">
+      <div id="phaseTitle" class="phase">صيد اللون</div>
+      <div id="timerText" class="timer">—</div>
+      <div id="heroNote" class="muted">اضبط الإعدادات ثم ابدأ الجولة الأولى.</div>
+      <div class="progress"><span id="progressFill"></span></div>
+      <div class="toolbar">
+        <span class="tag">الجولة <span id="roundTag">0</span></span>
+        <span class="tag">أرسلوا <span id="sentTag">0</span></span>
+        <span class="tag">المطلوب <span id="colorNameTag">—</span></span>
+      </div>
+    </div>
+    <div class="heroSide">
+      <div class="mini"><div class="lab">اللون الحالي</div><div id="currentColorLabel" class="val">—</div><div id="currentColorChip" class="colorChip hidden"></div></div>
+      <div class="mini"><div class="lab">إعدادات الجولة</div><div id="settingsNote" class="muted">الجولات: 3 - الاستعداد: 10 ث - التصوير: 20 ث</div><button id="startBtn" class="btn green full" style="margin-top:12px" onclick="startNextRound()">بدء الجولة الأولى</button></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="glass card">
+      <h2 class="h2">المتصلون الآن</h2>
+      <div id="playersBox" class="players"></div>
+    </div>
+
+    <div id="reviewSection" class="glass card hidden">
+      <h2 class="h2">مراجعة الصور</h2>
+      <div class="muted">حدد الصور الصحيحة والخاطئة ثم أنهِ المراجعة لاحتساب النقاط.</div>
+      <div id="reviewGrid" class="reviewGrid" style="margin-top:14px"></div>
+      <div class="row" style="margin-top:16px"><button class="btn gold" onclick="finishReview()">إنهاء المراجعة</button><button class="btn ghost" onclick="startNextRound()">بدء الجولة التالية</button></div>
+    </div>
+
+    <div id="resultsSection" class="glass card hidden">
+      <h2 class="h2">نتائج الجولة</h2>
+      <div id="resultText" class="stateNote"></div>
+      <div id="podium" class="podium hidden"></div>
+      <button id="nextRoundBtn" class="btn ghost full hidden" style="margin-top:14px" onclick="startNextRound()">الانتقال إلى الجولة التالية</button>
+    </div>
+  </div>
+</div></div>
+<script>
+const socket=createRoomSocket(); socket.emit('registerHost',{page:'color-host'}); socket.emit('selectGame',{gameKey:'color',gameLabel:'صيد اللون'});
+const menuPanel=document.getElementById('menuPanel');
+function toggleMenu(){menuPanel.classList.toggle('hidden')}
+document.addEventListener('click',(e)=>{if(!menuPanel.classList.contains('hidden')&&!menuPanel.contains(e.target)&&!e.target.closest('.iconBtn'))menuPanel.classList.add('hidden')});
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function teamLabel(t){return t==='team1'?'الفريق الأول':t==='team2'?'الفريق الثاني':'بدون فريق'}
+function playerCard(p){return `<div class="player"><div class="name">${esc(p.name)}</div><div class="meta">${teamLabel(p.team)}</div></div>`}
+let startingRound=false, lastPhaseSeen='', colorAdminState={submissions:[]};
+function startNextRound(){
+  if(startingRound) return;
+  startingRound=true;
+  GameFX.click();
+  GameFX.countdownOverlay('استعدوا للجولة').then(()=>{ socket.emit('colorStartNextRound'); setTimeout(()=>{ startingRound=false; },700); });
+}
+function markSubmission(id, correct){ socket.emit('colorMarkSubmission',{submissionId:id, correct}); }
+function finishReview(){ GameFX.reveal(); socket.emit('colorFinishReview'); }
+function exitGame(){ GameFX.click(); socket.emit('exitGameToTeams'); menuPanel.classList.add('hidden'); window.location.href=withRoom('/host') }
+function fmtSec(ms){ return ms?`${(ms/1000).toFixed(2)} ث`:'—'; }
+function buildPodium(board=[]){ const top=board.slice(0,3); if(!top.length) return ''; const order=[top[1],top[0],top[2]]; const classes=['second','first','third']; const medals=['🥈','🥇','🥉']; return order.map((p,i)=>p?`<div class="pod ${classes[i]}"><div class="rank">${medals[i]}</div><div class="pname">${esc(p.name||'')}</div><div class="pts">${p.points||0} نقطة</div></div>`:'<div></div>').join(''); }
+socket.on('colorHostAdminState',(payload)=>{ colorAdminState=payload||{submissions:[]}; });
+socket.on('stateUpdate',(state)=>{
+  const cBase=(state.games||{}).color||{};
+  const c={...cBase, submissions:(colorAdminState.submissions||[])};
+  const players=state.players||[];
+  document.getElementById('playersBox').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+  document.getElementById('settingsNote').textContent=`الجولات: ${c.settings?.rounds||3} - الاستعداد: ${c.settings?.prepSeconds||10} ث - التصوير: ${c.settings?.playSeconds||20} ث`;
+  document.getElementById('phaseTitle').textContent=c.phaseLabel||'صيد اللون';
+  const phaseNow=c.phase||'idle';
+  if(phaseNow!==lastPhaseSeen){
+    if(phaseNow==='briefing'){ GameFX.phaseOverlay('استعدوا', {duration:850}); GameFX.start(); }
+    else if(phaseNow==='playing'){ GameFX.phaseOverlay('ابدأوا الآن', {duration:850}); GameFX.start(); }
+    else if(phaseNow==='reviewing'){ GameFX.phaseOverlay('مرحلة المراجعة', {duration:800}); GameFX.reveal(); }
+    else if(phaseNow==='finished'){ GameFX.phaseOverlay('انتهت اللعبة', {duration:900}); GameFX.win(); GameFX.celebrate(); }
+    lastPhaseSeen=phaseNow;
+  }
+  document.getElementById('timerText').textContent=c.secondsLeft>0?`${c.secondsLeft} ثانية`:'—';
+  document.body.classList.toggle('hotTime', !!(c.secondsLeft>0 && c.secondsLeft<=3 && ['briefing','playing'].includes(c.phase)));
+  if(c.secondsLeft>0 && c.secondsLeft<=3 && ['briefing','playing'].includes(c.phase)){ GameFX.warning(); }
+  document.getElementById('currentColorLabel').textContent=c.targetColorName||'—';
+  document.getElementById('colorNameTag').textContent=c.targetColorName||'—';
+  document.getElementById('roundTag').textContent=c.round||0;
+  document.getElementById('sentTag').textContent=(c.submissions||[]).length||0;
+  const chip=document.getElementById('currentColorChip'); chip.classList.toggle('hidden',!c.targetColorHex); if(c.targetColorHex) chip.style.background=c.targetColorHex;
+  document.getElementById('heroNote').textContent = c.phase==='briefing' ? 'اللون ظاهر الآن للمقدم وقريبًا يبدأ وقت التصوير.' : c.phase==='playing' ? 'التصوير نشط الآن. راجع الصور بعد انتهاء الوقت.' : c.phase==='reviewing' ? 'راجع الصور وحدد الصحيح ثم أنهِ المراجعة.' : (c.statusText || 'اضبط الإعدادات ثم ابدأ الجولة الأولى.');
+  document.querySelector('.heroMain').classList.toggle('live', ['briefing','playing'].includes(c.phase));
+  document.getElementById('timerText').classList.toggle('hot', !!(c.secondsLeft>0 && c.secondsLeft<=3 && ['briefing','playing'].includes(c.phase)));
+  const total = c.phase==='briefing' ? (c.settings?.prepSeconds||10) : c.phase==='playing' ? (c.settings?.playSeconds||20) : 0;
+  const pct = total>0 ? Math.max(0, Math.min(100, ((c.secondsLeft||0)/total)*100)) : 0;
+  document.getElementById('progressFill').style.width=`${pct}%`;
+  document.getElementById('startBtn').classList.toggle('hidden', !!c.started && c.phase!=='waiting_next_round');
+  document.getElementById('startBtn').textContent = c.round ? 'بدء الجولة التالية' : 'بدء الجولة الأولى';
+  document.getElementById('reviewSection').classList.toggle('hidden', c.phase!=='reviewing');
+  document.getElementById('resultsSection').classList.toggle('hidden', !['waiting_next_round','finished'].includes(c.phase));
+  const nextRoundBtn=document.getElementById('nextRoundBtn'); nextRoundBtn.classList.toggle('hidden', c.phase!=='waiting_next_round');
+  if(c.phase==='reviewing'){
+    document.getElementById('reviewGrid').innerHTML=(c.submissions||[]).length ? c.submissions.map(s=>`<div class="reviewCard"><img src="${s.image||''}" alt=""><div class="name">${esc(s.name)}</div><div class="meta">${teamLabel(s.team)} • ${fmtSec(s.elapsedMs)}</div><div class="row" style="margin-top:10px"><button class="btn green" onclick="markSubmission('${s.id}',true)">صحيح</button><button class="btn red" onclick="markSubmission('${s.id}',false)">خطأ</button></div><div class="stateNote">${s.correct===true?'تم اعتباره صحيحًا':s.correct===false?'تم اعتباره خطأ':'بانتظار المراجعة'}</div></div>`).join('') : '<div class="stateNote">لم يرسل أحد أي صورة</div>';
+  }
+  if(['waiting_next_round','finished'].includes(c.phase)){
+    const r=c.lastRoundResult||{};
+    document.getElementById('resultText').textContent = r.winnerTeamName ? `الفريق الفائز في الجولة: ${r.winnerTeamName} — أسرع إجابة صحيحة: ${r.fastestCorrect?.name||'—'}` : 'انتهت المراجعة. يمكنك بدء الجولة التالية.';
+    const board=(c.phase==='finished' && r.finalScoreboard)?r.finalScoreboard:r.scoreboard||[];
+    const podium=document.getElementById('podium'); podium.classList.toggle('hidden', !board.length); podium.innerHTML=buildPodium(board);
+  }
+});
+socket.on('gameEnded',()=>{ window.location.replace(withRoom('/host')); });
+</script></body></html>
