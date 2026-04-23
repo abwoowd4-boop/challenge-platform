@@ -1259,34 +1259,25 @@ function presentLettersQuestion(payload={}){
     index:Number.isFinite(Number(payload.index)) ? Number(payload.index) : -1,
     question,
     answer:String(payload.answer||'').trim(),
-    showAnswer:false,
+    showAnswer:!!payload.showAnswer,
     shownAt:Date.now(),
-    answerShownAt:null,
+    answerShownAt:payload.showAnswer?Date.now():null,
     autoHideAt:null
   };
   emitState();
   return {ok:true};
 }
-function showPresentedLettersAnswer(durationMs=5000){
+function showPresentedLettersAnswer(){
   const letters=getLetters();
   if(!letters.presentedQuestion) return {ok:false,message:'لا يوجد سؤال معروض'};
-  const duration=Math.max(1000, Math.min(15000, Number(durationMs)||5000));
   if(lettersPresentedQuestionTimeout){ clearTimeout(lettersPresentedQuestionTimeout); lettersPresentedQuestionTimeout=null; }
   letters.presentedQuestion={
     ...letters.presentedQuestion,
     showAnswer:true,
     answerShownAt:Date.now(),
-    autoHideAt:Date.now()+duration
+    autoHideAt:null
   };
   emitState();
-  lettersPresentedQuestionTimeout=setTimeout(()=>{
-    const current=getLetters().presentedQuestion;
-    if(current && current.showAnswer){
-      getLetters().presentedQuestion=null;
-      lettersPresentedQuestionTimeout=null;
-      emitState();
-    }
-  }, duration);
   return {ok:true};
 }
 function clearPresentedLettersQuestion(){
@@ -1342,6 +1333,7 @@ function lettersBuzz(playerId=''){
     state.app.statusText=letters.statusText;
     updateLettersNotice();
     emitState();
+    io.to(roomCode).emit('lettersBuzzFlash',{name:player.name,team:player.team||'',teamName:state.teamNames[player.team]||'بدون فريق'});
     return {ok:true};
   }
 
@@ -1352,6 +1344,7 @@ function lettersBuzz(playerId=''){
   letters.statusText=`${player.name} ضغط الزر أولًا - وقت الإجابة بدأ الآن`;
   state.app.statusText=letters.statusText;
   startLettersCountdown(letters.settings.answerSeconds, 'وقت الإجابة', ()=>sendLettersChanceToOtherTeam());
+  io.to(roomCode).emit('lettersBuzzFlash',{name:player.name,team:player.team||'',teamName:state.teamNames[player.team]||'بدون فريق'});
   return {ok:true};
 }
 function checkLettersWin(teamKey){
@@ -1818,7 +1811,7 @@ socket.on('lettersPrime',()=>{state.app.selectedGame='letters'; state.app.select
   socket.on('lettersStart',()=>{startLettersGame();});
   socket.on('lettersSetCurrentLetter',({letter}={})=>{setLettersCurrentLetter(letter);});
   socket.on('lettersPresentQuestion',(payload={})=>{presentLettersQuestion(payload);});
-  socket.on('lettersShowQuestionAnswer',({durationMs}={})=>{showPresentedLettersAnswer(durationMs);});
+  socket.on('lettersShowQuestionAnswer',()=>{showPresentedLettersAnswer();});
   socket.on('lettersClearPresentedQuestion',()=>{clearPresentedLettersQuestion();});
   socket.on('lettersBuzz',({playerId}={})=>{const result=lettersBuzz(playerId); if(result.ok) socket.emit('lettersBuzzAccepted'); else socket.emit('lettersBuzzRejected',{message:result.message});});
   socket.on('lettersClearResponder',()=>{clearLettersResponder();});

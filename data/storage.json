@@ -50,8 +50,8 @@
       "label": "Test User",
       "isPermanent": true,
       "createdAt": 1776938122237,
-      "updatedAt": 1776963450345,
-      "lastOpenedAt": 1776963450344
+      "updatedAt": 1776970397575,
+      "lastOpenedAt": 1776970397575
     },
     {
       "roomId": "7A15CD",
@@ -59,8 +59,17 @@
       "label": "a",
       "isPermanent": true,
       "createdAt": 1776938122238,
-      "updatedAt": 1776963497204,
-      "lastOpenedAt": 1776963497204
+      "updatedAt": 1776970608866,
+      "lastOpenedAt": 1776970608866
+    },
+    {
+      "roomId": "MST3",
+      "ownerEmail": "",
+      "label": "MST3",
+      "isPermanent": true,
+      "createdAt": 1776964729126,
+      "updatedAt": 1776965730751,
+      "lastOpenedAt": 1776965730751
     }
   ],
   "roomSnapshots": [
@@ -125,7 +134,7 @@
     },
     {
       "roomId": "7A15CD",
-      "savedAt": 1776963497204,
+      "savedAt": 1776970608866,
       "state": {
         "teamNames": {
           "team1": "الفريق الأحمر",
@@ -139,6 +148,65 @@
           "gamePhase": "",
           "currentRound": 0,
           "introDismissed": true,
+          "overlayState": {
+            "type": "none",
+            "url": ""
+          }
+        },
+        "games": {
+          "mafia": {
+            "settings": {
+              "mafiaCount": 1,
+              "investigationSeconds": 45,
+              "defenseSeconds": 30,
+              "enableMayor": false,
+              "enableSniper": false,
+              "enableRopePlayer": false,
+              "enableSilentMafia": false
+            }
+          },
+          "color": {
+            "settings": {
+              "rounds": 3,
+              "prepSeconds": 10,
+              "playSeconds": 20
+            },
+            "recentColors": []
+          },
+          "letters": {
+            "gridSize": 5,
+            "settings": {
+              "answerSeconds": 10,
+              "otherTeamSeconds": 7,
+              "frameTopBottom": "#62c924",
+              "frameSides": "#ff8a3d",
+              "team1Color": "#51c84d",
+              "team2Color": "#ff8a3d"
+            }
+          },
+          "outsider": {
+            "category": "اكلات",
+            "optionsCount": 8
+          }
+        }
+      }
+    },
+    {
+      "roomId": "MST3",
+      "savedAt": 1776965730751,
+      "state": {
+        "teamNames": {
+          "team1": "الفريق الأحمر",
+          "team2": "الفريق الأزرق"
+        },
+        "app": {
+          "selectedGame": "",
+          "selectedGameLabel": "",
+          "currentView": "lobby",
+          "statusText": "بانتظار اختيار اللعبة",
+          "gamePhase": "",
+          "currentRound": 0,
+          "introDismissed": false,
           "overlayState": {
             "type": "none",
             "url": ""
