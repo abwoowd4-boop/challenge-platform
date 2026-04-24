@@ -355,6 +355,7 @@ function sanitizeRoomSnapshot(snapshot={}){
   };
   const defaultOutsiderCategory='اكلات';
   const defaultOutsiderOptionsCount=8;
+  const defaultFamilyRounds=5;
   return {
     teamNames:{
       team1:String(safe.teamNames?.team1||'الفريق الأحمر'),
@@ -374,7 +375,8 @@ function sanitizeRoomSnapshot(snapshot={}){
       mafia:{settings:{...defaultMafiaState(0).settings, ...(safe.games?.mafia?.settings||{})}},
       color:{settings:{...defaultColorState().settings, ...(safe.games?.color?.settings||{})}, recentColors:Array.isArray(safe.games?.color?.recentColors)?safe.games.color.recentColors.slice(0,6):[]},
       letters:{gridSize:Math.max(3, Math.min(5, Number(safe.games?.letters?.gridSize)||5)), settings:{...defaultLettersSettings, ...(safe.games?.letters?.settings||{})}},
-      outsider:{category:String(safe.games?.outsider?.category||defaultOutsiderCategory), optionsCount:Math.max(4, Number(safe.games?.outsider?.optionsCount)||defaultOutsiderOptionsCount)}
+      outsider:{category:String(safe.games?.outsider?.category||defaultOutsiderCategory), optionsCount:Math.max(4, Number(safe.games?.outsider?.optionsCount)||defaultOutsiderOptionsCount)},
+      family:{settings:{rounds:Math.max(1, Math.min(10, Number(safe.games?.family?.settings?.rounds)||defaultFamilyRounds))}}
     }
   };
 }
@@ -386,7 +388,8 @@ function buildRoomSnapshotFromState(state){
       mafia:{settings:state.games?.mafia?.settings},
       color:{settings:state.games?.color?.settings, recentColors:state.games?.color?.recentColors},
       letters:{gridSize:state.games?.letters?.gridSize, settings:state.games?.letters?.settings},
-      outsider:{category:state.games?.outsider?.category, optionsCount:state.games?.outsider?.optionsCount}
+      outsider:{category:state.games?.outsider?.category, optionsCount:state.games?.outsider?.optionsCount},
+      family:{settings:state.games?.family?.settings}
     }
   });
 }
@@ -435,6 +438,7 @@ app.get('/',(req,res)=>{
   if(game==='color') return res.sendFile(path.join(__dirname,'public','games','color','screen.html'));
   if(game==='letters') return res.sendFile(path.join(__dirname,'public','games','letters','screen.html'));
   if(game==='outsider') return res.sendFile(path.join(__dirname,'public','games','outsider','screen.html'));
+  if(game==='family') return res.sendFile(path.join(__dirname,'public','games','family','screen.html'));
   return res.sendFile(path.join(__dirname,'public','index.html'));
 });
 app.get('/lobby', (_req,res)=>res.sendFile(path.join(__dirname,'public','lobby.html')));
@@ -463,6 +467,7 @@ app.get('/player', (req,res)=>{
   if(running && game==='color') return res.sendFile(path.join(__dirname,'public','games','color','player.html'));
   if(running && game==='letters') return res.sendFile(path.join(__dirname,'public','games','letters','player.html'));
   if(running && game==='outsider') return res.sendFile(path.join(__dirname,'public','games','outsider','player.html'));
+  if(running && game==='family') return res.sendFile(path.join(__dirname,'public','games','family','player.html'));
   return res.sendFile(path.join(__dirname,'public','player.html'));
 });
 app.get('/games', requireActivatedUserPage, (req,res)=>{
@@ -536,6 +541,23 @@ app.get('/games/outsider/host', requireActivatedUserPage, (req,res)=>{
 });
 app.get('/games/outsider/screen', (_,res)=>res.sendFile(path.join(__dirname,'public','games','outsider','screen.html')));
 app.get('/games/outsider/player', (_,res)=>res.sendFile(path.join(__dirname,'public','games','outsider','player.html')));
+app.get('/games/family/setup', requireActivatedUserPage, (req,res)=>{
+  const userRoom=normalizeRoomCode(req.userSession?.user?.roomId||'');
+  const roomCode=normalizeRoomCode(req.query?.room||userRoom||'');
+  if(!userRoom) return res.redirect('/dashboard');
+  if(roomCode!==userRoom) return res.redirect(`/games/family/setup?room=${encodeURIComponent(userRoom)}`);
+  return res.sendFile(path.join(__dirname,'public','games','family','setup.html'));
+});
+app.get('/games/family/host', requireActivatedUserPage, (req,res)=>{
+  const userRoom=normalizeRoomCode(req.userSession?.user?.roomId||'');
+  const roomCode=normalizeRoomCode(req.query?.room||userRoom||'');
+  if(!userRoom) return res.redirect('/dashboard');
+  if(roomCode!==userRoom) return res.redirect(`/games/family/host?room=${encodeURIComponent(userRoom)}`);
+  return res.sendFile(path.join(__dirname,'public','games','family','host.html'));
+});
+app.get('/games/family/screen', (_,res)=>res.sendFile(path.join(__dirname,'public','games','family','screen.html')));
+app.get('/games/family/player', (_,res)=>res.sendFile(path.join(__dirname,'public','games','family','player.html')));
+
 
 app.get('/login',(_req,res)=>res.sendFile(path.join(__dirname,'public','login.html')));
 app.get('/register',(_req,res)=>res.sendFile(path.join(__dirname,'public','register.html')));
@@ -679,6 +701,10 @@ function defaultOutsiderState(){
   };
 }
 
+function defaultFamilyState(){
+  return {started:false,phase:'waiting',phaseLabel:'بانتظار البداية',statusText:'جهّز اللاعبين ثم ابدأ جولة فاميلي فيود.',round:0,settings:{rounds:5},currentQuestion:null,revealed:{},strikes:{team1:0,team2:0},activeTeam:'team1',bank:0,lastResultText:'',winnerTeam:'',winnerText:'',usedQuestions:[],faceoff:{team1PlayerId:'',team2PlayerId:'',answers:{},winnerPlayerId:'',winnerTeam:'',choice:''}};
+}
+
 function createRoomContext(roomCode, persistedSnapshot=null){
 const COLOR_POOL = [
   {name:'أحمر',hex:'#ef4444'},{name:'أحمر داكن',hex:'#b91c1c'},{name:'قرمزي',hex:'#dc2626'},
@@ -713,7 +739,7 @@ const state={
     introDismissed:false,
     overlayState:{type:'none',url:''}
   },
-  games:{mafia:defaultMafiaState(0), color:defaultColorState(), letters:defaultLettersState(), outsider:defaultOutsiderState()}
+  games:{mafia:defaultMafiaState(0), color:defaultColorState(), letters:defaultLettersState(), outsider:defaultOutsiderState(), family:defaultFamilyState()}
 };
 const restoredSnapshot=sanitizeRoomSnapshot(persistedSnapshot||{});
 state.teamNames={...state.teamNames,...(restoredSnapshot.teamNames||{})};
@@ -726,6 +752,7 @@ state.games.letters=defaultLettersState(restoredGridSize);
 state.games.letters.settings={...state.games.letters.settings,...(restoredSnapshot.games?.letters?.settings||{})};
 state.games.outsider.category=String(restoredSnapshot.games?.outsider?.category||state.games.outsider.category);
 state.games.outsider.optionsCount=Math.max(4, Number(restoredSnapshot.games?.outsider?.optionsCount)||state.games.outsider.optionsCount);
+state.games.family.settings={...state.games.family.settings,...(restoredSnapshot.games?.family?.settings||{})};
 
 let mafiaTimerInterval=null;
 let colorTimerInterval=null;
@@ -799,6 +826,7 @@ function getMafia(){return state.games.mafia;}
 function getColor(){return state.games.color;}
 function getLetters(){return state.games.letters;}
 function getOutsider(){return state.games.outsider;}
+function getFamily(){return state.games.family;}
 function alivePlayers(){return state.players.filter(p=>p.isAlive);}
 function getPlayer(id){return state.players.find(p=>p.playerId===id);}
 
@@ -916,6 +944,55 @@ function startOutsiderGame(){
   emitState(); emitOutsiderSync();
   return true;
 }
+
+// بنك فاميلي فيود الاحترافي: 500 سؤال، كل سؤال مربوط بإجابات مناسبة للموضوع نفسه.
+const FAMILY_PACKS = [{"topic":"أشياء تضيع في البيت","answers":[["المفاتيح",32],["الجوال",28],["الريموت",18],["الشاحن",13],["المحفظة",9]]},{"topic":"أول ما تصحى","answers":[["الجوال",36],["غسل الوجه",20],["الصلاة",18],["القهوة",14],["الرجوع للنوم",12]]},{"topic":"القهوة والضيافة","answers":[["تمر",34],["حلى",24],["شوكولاتة",18],["معمول",14],["ماء",10]]},{"topic":"الأكلات السعودية","answers":[["كبسة",38],["مندي",24],["مفطح",17],["جريش",11],["مرقوق",10]]},{"topic":"أندية الدوري السعودي","answers":[["الهلال",34],["الاتحاد",26],["النصر",25],["الأهلي",15]]},{"topic":"أندية الدوري الإسباني","answers":[["ريال مدريد",38],["برشلونة",36],["أتلتيكو مدريد",14],["إشبيلية",7],["فالنسيا",5]]},{"topic":"نجوم كرة القدم","answers":[["ميسي",30],["رونالدو",30],["مبابي",17],["نيمار",12],["سالم الدوسري",11]]},{"topic":"حماس المباراة","answers":[["هدف آخر دقيقة",32],["الجمهور",24],["المعلق",18],["ركلات الترجيح",14],["الديربي",12]]},{"topic":"طلعات الويكند","answers":[["مطعم",30],["كافيه",25],["البحر",18],["المول",16],["البر",11]]},{"topic":"السفر","answers":[["جواز السفر",34],["الشنطة",22],["الجوال",18],["الشاحن",14],["الحجز",12]]},{"topic":"تطبيقات الجوال","answers":[["واتساب",32],["سناب شات",25],["تيك توك",18],["انستغرام",15],["يوتيوب",10]]},{"topic":"زحمة الشوارع","answers":[["التأخير",30],["البوري",24],["الحر",18],["الوقوف الطويل",16],["السواقة المتهورة",12]]},{"topic":"المطبخ","answers":[["قدر",26],["سكين",22],["ملعقة",20],["ثلاجة",18],["فرن",14]]},{"topic":"المطعم","answers":[["المنيو",28],["الطاولة",22],["النادل",20],["الفاتورة",16],["الطلب",14]]},{"topic":"الكافيهات","answers":[["قهوة",32],["حلى",22],["جلسات",18],["تصوير",15],["موسيقى",13]]},{"topic":"الجوال وملحقاته","answers":[["الشاحن",30],["الكفر",22],["الشاشة",20],["السماعات",15],["البطارية",13]]},{"topic":"الدوام","answers":[["المدير",26],["الاجتماعات",22],["الإيميل",20],["القهوة",17],["الراتب",15]]},{"topic":"المدرسة","answers":[["الكتاب",28],["المعلم",24],["الاختبار",20],["الفسحة",16],["الواجب",12]]},{"topic":"الجامعة","answers":[["المحاضرة",28],["الدكتور",22],["الاختبار",20],["القروب",16],["المواقف",14]]},{"topic":"المستشفى","answers":[["الطبيب",30],["الممرض",22],["الانتظار",20],["الأدوية",16],["التحاليل",12]]},{"topic":"العيد","answers":[["العيدية",32],["الملابس الجديدة",24],["الزيارات",18],["الحلويات",14],["الصلاة",12]]},{"topic":"رمضان","answers":[["الفطور",30],["السحور",22],["التمر",20],["التراويح",16],["المسلسلات",12]]},{"topic":"الاستراحة","answers":[["شواء",30],["بلوت",24],["شاي",18],["مسبح",16],["كرة",12]]},{"topic":"طلعة البحر","answers":[["السباحة",30],["الشواء",20],["القارب",18],["الرمل",17],["التصوير",15]]},{"topic":"طلعة البر","answers":[["النار",28],["القهوة",24],["الخيمة",20],["الحطب",16],["النجوم",12]]},{"topic":"ألعاب الفيديو","answers":[["فيفا",26],["فورتنايت",22],["ماينكرافت",20],["كول أوف ديوتي",18],["قراند",14]]},{"topic":"الأنمي","answers":[["ون بيس",28],["ناروتو",26],["هجوم العمالقة",18],["ديث نوت",15],["دراغون بول",13]]},{"topic":"حفلات الزواج","answers":[["العشاء",28],["الزفة",24],["التصوير",20],["القاعة",16],["الرقص",12]]},{"topic":"التسوق في المول","answers":[["الخصومات",30],["الملابس",22],["العطور",18],["الأحذية",16],["المحاسبة",14]]},{"topic":"التسوق الإلكتروني","answers":[["الشحن",28],["الدفع",22],["الخصم",20],["التقييمات",16],["الاسترجاع",14]]},{"topic":"النوم","answers":[["السرير",30],["المخدة",24],["البطانية",20],["المنبه",14],["الجوال",12]]},{"topic":"ذكريات الطفولة","answers":[["الألعاب",30],["المدرسة",22],["الكرتون",20],["الحلويات",16],["الدراجة",12]]},{"topic":"السيارة","answers":[["البنزين",28],["المفتاح",22],["الإطار",20],["المكيف",16],["المسجل",14]]},{"topic":"السيارات الفخمة","answers":[["مرسيدس",28],["بي إم دبليو",24],["لكزس",20],["بورش",15],["رنج روفر",13]]},{"topic":"الملابس","answers":[["ثوب",26],["قميص",22],["بنطلون",20],["حذاء",18],["جاكيت",14]]},{"topic":"العطور","answers":[["عود",28],["مسك",24],["ورد",18],["فانيلا",16],["عنبر",14]]},{"topic":"الصيف","answers":[["المكيف",34],["البحر",22],["الآيسكريم",18],["السفر",14],["العصير",12]]},{"topic":"الشتاء","answers":[["المطر",30],["البرد",24],["الشاي",20],["البر",16],["الجاكيت",10]]},{"topic":"المطار","answers":[["الجواز",28],["التذكرة",24],["الشنط",20],["الجوازات",16],["البوابة",12]]},{"topic":"الفندق","answers":[["الغرفة",30],["الاستقبال",22],["المفتاح",18],["الفطور",16],["المسبح",14]]},{"topic":"الأشياء الغالية","answers":[["البيت",30],["السيارة",24],["الذهب",18],["الجوال",14],["الساعة",14]]},{"topic":"المجلس والضيوف","answers":[["القهوة",30],["الشاي",22],["الحلى",20],["التمر",16],["العشاء",12]]},{"topic":"الرياضة","answers":[["كرة القدم",34],["المشي",22],["الجيم",18],["السباحة",14],["الجري",12]]},{"topic":"الفطور","answers":[["بيض",28],["خبز",24],["جبن",18],["قهوة",16],["فول",14]]},{"topic":"العشاء","answers":[["شاورما",28],["بيتزا",24],["برجر",20],["كبسة",16],["سلطة",12]]},{"topic":"الحلويات","answers":[["كيك",28],["شوكولاتة",24],["دونات",18],["كنافة",16],["آيسكريم",14]]},{"topic":"الأصدقاء","answers":[["السوالف",28],["الطلعات",24],["الضحك",20],["الألعاب",16],["الأكل",12]]},{"topic":"المواقف المحرجة","answers":[["السقوط",28],["نسيان الاسم",22],["الصوت الغريب",20],["الملابس",16],["الرد الخاطئ",14]]},{"topic":"الأصوات المزعجة","answers":[["البوري",26],["الحفر",22],["صراخ الأطفال",20],["المنبه",18],["المكنسة",14]]},{"topic":"كأس العالم","answers":[["البرازيل",28],["الأرجنتين",24],["فرنسا",20],["ألمانيا",16],["إسبانيا",12]]}];
+const FAMILY_QUESTION_TEMPLATES = ["اذكر شيئًا مرتبطًا بـ {topic}","اذكر أول شيء يخطر ببالك عند ذكر {topic}","اذكر شيئًا يكثر في موضوع {topic}","اذكر شيئًا معروفًا في {topic}","اذكر شيئًا يحبه الناس في {topic}","اذكر شيئًا قد تسمعه أو تراه في {topic}","اذكر شيئًا لا يخلو منه {topic}","اذكر شيئًا يسبب حماسًا أو اهتمامًا في {topic}","اذكر شيئًا يناسب جلسة عن {topic}","اذكر شيئًا يتكرر كثيرًا في {topic}"];
+function buildFamilyQuestionBank(){
+  const bank=[];
+  FAMILY_PACKS.forEach((pack)=>{
+    FAMILY_QUESTION_TEMPLATES.forEach((template)=>{
+      bank.push({q:template.replace('{topic}',pack.topic),answers:pack.answers.map(a=>[a[0],a[1]])});
+    });
+  });
+  return bank.slice(0,500);
+}
+const FAMILY_QUESTIONS = buildFamilyQuestionBank();
+function resetFamilyGame(preserveConfig=true){const prev=state.games.family||defaultFamilyState();const next=defaultFamilyState();if(preserveConfig) next.settings={...next.settings,...(prev.settings||{})};state.games.family=next;}
+function familyPickQuestion(){const g=getFamily();const used=g.usedQuestions||[];let pool=FAMILY_QUESTIONS.map((x,i)=>({...x,id:i})).filter(x=>!used.includes(x.id));if(!pool.length) pool=FAMILY_QUESTIONS.map((x,i)=>({...x,id:i}));const q=pool[Math.floor(Math.random()*pool.length)];g.usedQuestions=[...used,q.id].slice(-FAMILY_QUESTIONS.length);return {id:q.id,q:q.q,answers:q.answers.map((a,i)=>({id:i,text:a[0],points:a[1]}))};}
+function setFamilyPhase(phase,status=''){const g=getFamily();g.phase=phase;g.phaseLabel={waiting:'بانتظار البداية',faceoff:'مواجهة البداية',choice:'قرار اللعب أو التمرير',question:'السؤال الحالي',steal:'فرصة السرقة',finished:'النتيجة'}[phase]||phase;g.statusText=status||g.phaseLabel;state.app.selectedGame='family';state.app.selectedGameLabel='فاميلي فيود';state.app.currentView=phase==='finished'?'game_results':'game_running';state.app.gamePhase=g.phaseLabel;state.app.statusText=g.statusText;state.app.currentRound=g.round||0;}
+function startFamilyRound(){const g=getFamily();g.started=true;g.round=(g.round||0)+1;g.currentQuestion=familyPickQuestion();g.revealed={};g.strikes={team1:0,team2:0};g.bank=0;g.activeTeam='';g.lastResultText='';g.winnerTeam='';g.winnerText='';const t1=state.players.filter(p=>p.team==='team1');const t2=state.players.filter(p=>p.team==='team2');const pick=(arr)=>arr.length?arr[(g.round-1)%arr.length]:null;const p1=pick(t1),p2=pick(t2);g.faceoff={team1PlayerId:p1?.playerId||'',team2PlayerId:p2?.playerId||'',answers:{},winnerPlayerId:'',winnerTeam:'',choice:''};setFamilyPhase('faceoff',`مواجهة بداية الجولة ${g.round}: ${p1?.name||'لاعب من الفريق الأول'} ضد ${p2?.name||'لاعب من الفريق الثاني'}.`);emitState();}
+function familyFaceoffAnswer(playerId,text){const g=getFamily();if(g.phase!=='faceoff'||!g.currentQuestion||!playerId)return;const allowed=[g.faceoff?.team1PlayerId,g.faceoff?.team2PlayerId].filter(Boolean);if(!allowed.includes(playerId))return;g.faceoff.answers=g.faceoff.answers||{};if(g.faceoff.answers[playerId])return;const player=state.players.find(p=>p.playerId===playerId);g.faceoff.answers[playerId]={text:String(text||'جاهز للإجابة شفهيًا').trim().slice(0,80),at:Date.now(),name:player?.name||'',team:player?.team||'',buzz:true};g.lastResultText=`${player?.name||'لاعب'} ضغط زر الإجابة في المواجهة`;emitState();}
+function familyPickFaceoffWinner(playerId){const g=getFamily();if(g.phase!=='faceoff'||!playerId)return;const player=state.players.find(p=>p.playerId===playerId);if(!player)return;g.faceoff.winnerPlayerId=playerId;g.faceoff.winnerTeam=player.team||'team1';g.faceoff.choice='';setFamilyPhase('choice',`${player.name} فاز بالمواجهة. ينتظر اختياره من الجوال: يلعب أو يمرر.`);emitState();}
+function familyFaceoffChoice(playerId,choice){const g=getFamily();if(g.phase!=='choice'||playerId!==g.faceoff?.winnerPlayerId)return;const winnerTeam=g.faceoff.winnerTeam||'team1';const other=winnerTeam==='team1'?'team2':'team1';g.faceoff.choice=choice==='pass'?'pass':'play';g.activeTeam=g.faceoff.choice==='pass'?other:winnerTeam;setFamilyPhase('question',g.faceoff.choice==='pass'?`تم تمرير السؤال إلى ${state.teamNames[g.activeTeam]||'الفريق الآخر'}.`:`اختار ${state.teamNames[g.activeTeam]||'الفريق'} لعب السؤال.`);emitState();}
+function revealFamilyAnswer(answerId){const g=getFamily();if(!g.currentQuestion)return;const id=String(answerId);if(g.revealed[id])return;const ans=(g.currentQuestion.answers||[]).find(a=>String(a.id)===id);if(!ans)return;g.revealed[id]=true;g.bank=(Number(g.bank)||0)+Number(ans.points||0);g.lastResultText=`إجابة صحيحة: ${ans.text} +${ans.points}`;const all=(g.currentQuestion.answers||[]).every(a=>g.revealed[String(a.id)]);if(all) awardFamilyBank(g.activeTeam,'اكتملت كل الإجابات.'); else emitState();}
+function familyStrike(team){
+  const g=getFamily();
+  if(!g) return {ok:false,message:'family game not found'};
+  if(!g.strikes || typeof g.strikes!=='object') g.strikes={team1:0,team2:0};
+  const raw=String(team||g.activeTeam||'team1').trim();
+  const t=raw==='team2'?'team2':'team1';
+  g.strikes[t]=Math.min(3,(Number(g.strikes[t])||0)+1);
+  if(!g.activeTeam) g.activeTeam=t;
+  g.lastResultText=`❌ خطأ على ${state.teamNames[t]||'الفريق'} (${g.strikes[t]}/3)`;
+  state.app.selectedGame='family';
+  state.app.selectedGameLabel='فاميلي فيود';
+  state.app.currentView='game_running';
+  if(g.strikes[t]>=3){
+    g.activeTeam=t==='team1'?'team2':'team1';
+    setFamilyPhase('steal',`ثلاث أخطاء. فرصة سرقة للبنك مع ${state.teamNames[g.activeTeam]||'الفريق الآخر'}.`);
+  }else{
+    state.app.statusText=g.lastResultText;
+    state.app.gamePhase=g.phaseLabel||'السؤال الحالي';
+  }
+  const payload={ok:true,team:t,count:g.strikes[t],text:g.lastResultText,strikes:g.strikes,activeTeam:g.activeTeam};
+  io.to(roomCode).emit('familyStrikeFlash',payload);
+  io.to(roomCode).emit('familyStrikeApplied',payload);
+  emitState();
+  return payload;
+}
+function awardFamilyBank(team,note=''){const g=getFamily();const t=team||g.activeTeam||'team1';state.teamScores[t]=(Number(state.teamScores[t])||0)+(Number(g.bank)||0);g.lastResultText=`${note} تم احتساب ${g.bank} نقطة لـ ${state.teamNames[t]||'الفريق'}.`;if(g.round>=Math.max(1,Number(g.settings?.rounds)||5)){const winner=Number(state.teamScores.team1||0)===Number(state.teamScores.team2||0)?'':(Number(state.teamScores.team1||0)>Number(state.teamScores.team2||0)?'team1':'team2');g.winnerTeam=winner;g.winnerText=winner?`الفائز: ${state.teamNames[winner]}`:'تعادل بين الفريقين';setFamilyPhase('finished',g.winnerText);}else{setFamilyPhase('waiting','انتهت الجولة. ابدأ الجولة التالية عندما تكون جاهزًا.');}emitState();}
+function familySetConfig(config={}){const g=getFamily();g.settings={...g.settings,rounds:Math.max(1,Math.min(10,Number(config.rounds)||g.settings.rounds||5))};}
 
 function playerAlignment(role=''){
   return ['mafia','silentMafia'].includes(role)?'mafia':'citizens';
@@ -1736,6 +1813,7 @@ function exitCurrentGameToTeams(){
   resetColorGame();
   resetLettersGame();
   resetOutsiderGame();
+  resetFamilyGame();
   state.app.selectedGame='';
   state.app.selectedGameLabel='';
   state.app.currentView='lobby';
@@ -1755,7 +1833,7 @@ socket.emit('stateUpdate',buildState());
   socket.on('screenReady',()=>{maybeShowMainHostQr(); socket.emit('stateUpdate',buildState());});
   socket.on('forceLobbyView',()=>{ state.app.selectedGame=''; state.app.selectedGameLabel=''; state.app.currentView='lobby'; state.app.statusText='بانتظار دخول اللاعبين'; state.app.gamePhase=''; state.app.currentRound=0; state.app.introDismissed=true; hideOverlay(); emitState(); });
 
-  socket.on('selectGame',({gameKey,gameLabel}={})=>{state.app.selectedGame=gameKey||''; state.app.selectedGameLabel=gameLabel||''; state.app.currentView='game_selected'; state.app.statusText=gameLabel?`تم اختيار ${gameLabel}`:'تم اختيار اللعبة'; state.app.gamePhase=''; state.app.currentRound=0; state.app.introDismissed=true; hideOverlay(); resetPlayersGameData(); resetScores(); if(gameKey==='mafia') resetMafiaGame(); if(gameKey==='color') resetColorGame(); if(gameKey==='letters') resetLettersGame(); if(gameKey==='outsider') resetOutsiderGame(true); emitState();});
+  socket.on('selectGame',({gameKey,gameLabel}={})=>{state.app.selectedGame=gameKey||''; state.app.selectedGameLabel=gameLabel||''; state.app.currentView='game_selected'; state.app.statusText=gameLabel?`تم اختيار ${gameLabel}`:'تم اختيار اللعبة'; state.app.gamePhase=''; state.app.currentRound=0; state.app.introDismissed=true; hideOverlay(); resetPlayersGameData(); resetScores(); if(gameKey==='mafia') resetMafiaGame(); if(gameKey==='color') resetColorGame(); if(gameKey==='letters') resetLettersGame(); if(gameKey==='outsider') resetOutsiderGame(true); if(gameKey==='family') resetFamilyGame(true); emitState();});
   socket.on('clearSelectedGame',()=>{state.app.selectedGame=''; state.app.selectedGameLabel=''; state.app.currentView='lobby'; state.app.statusText='بانتظار اختيار اللعبة'; state.app.gamePhase=''; state.app.currentRound=0; emitState();});
   socket.on('renameTeam',({teamKey,teamName}={})=>{if(!teamKey||!state.teamNames[teamKey]) return; const safeTeamName=String(teamName||'').trim(); if(!safeTeamName) return; state.teamNames[teamKey]=safeTeamName; emitState();});
   socket.on('assignPlayerTeam',({playerId,team}={})=>{const player=state.players.find(p=>p.playerId===playerId); if(!player) return; if(!['team1','team2',''].includes(team)) return; player.team=team||''; emitState();});
@@ -1772,6 +1850,8 @@ socket.emit('stateUpdate',buildState());
   socket.on('showLettersPlayerQr',()=>showOverlay('player','/games/letters/player'));
   socket.on('showOutsiderHostQr',()=>showOverlay('host','/games/outsider/host'));
   socket.on('showOutsiderPlayerQr',()=>showOverlay('player','/games/outsider/player'));
+  socket.on('showFamilyHostQr',()=>showOverlay('host','/games/family/host'));
+  socket.on('showFamilyPlayerQr',()=>showOverlay('player','/games/family/player'));
   socket.on('hideOverlay',()=>hideOverlay());
   socket.on('exitGameToTeams',()=>exitCurrentGameToTeams());
 
@@ -1831,6 +1911,21 @@ socket.on('lettersPrime',()=>{state.app.selectedGame='letters'; state.app.select
   socket.on('outsiderReset',()=>{ resetPlayersGameData(); resetOutsiderGame(true); state.app.selectedGame='outsider'; state.app.selectedGameLabel='برا السالفة'; state.app.currentView='game_selected'; state.app.statusText='تمت إعادة لعبة برا السالفة'; emitState(); emitOutsiderSync();});
   socket.on('outsiderRequestSecret',()=>sendOutsiderSecret(socket));
   socket.on('outsiderRequestAdminState',()=>sendOutsiderAdminState(socket));
+
+  socket.on('familyPrime',()=>{state.app.selectedGame='family'; state.app.selectedGameLabel='فاميلي فيود'; if(!state.app.currentView||state.app.currentView==='lobby') state.app.currentView='game_selected'; state.app.statusText='تم اختيار فاميلي فيود'; emitState();});
+  socket.on('familyUpdateConfig',(config={})=>{familySetConfig(config); emitState();});
+  socket.on('familyStartRound',()=>{startFamilyRound(); io.to(roomCode).emit('gamefx:intro',{text:'فاميلي فيود'});});
+  socket.on('familyFaceoffAnswer',({playerId,text}={})=>familyFaceoffAnswer(playerId,text));
+  socket.on('familyFaceoffWinner',({playerId}={})=>familyPickFaceoffWinner(playerId));
+  socket.on('familyFaceoffChoice',({playerId,choice}={})=>familyFaceoffChoice(playerId,choice));
+  socket.on('familyRevealAnswer',({answerId}={})=>revealFamilyAnswer(answerId));
+  socket.on('familyStrike',(payload={},ack)=>{ const result=familyStrike(payload?.team ?? payload); if(typeof ack==='function') ack(result); });
+  socket.on('familyAddStrike',(payload={},ack)=>{ const result=familyStrike(payload?.team ?? payload); if(typeof ack==='function') ack(result); });
+  socket.on('familyWrongAnswer',(payload={},ack)=>{ const result=familyStrike(payload?.team ?? payload); if(typeof ack==='function') ack(result); });
+  socket.on('feud:strike',(payload={},ack)=>{ const result=familyStrike(payload?.team ?? payload); if(typeof ack==='function') ack(result); });
+  socket.on('familyAwardBank',({team}={})=>awardFamilyBank(team,'قرار المقدم.'));
+  socket.on('familySwitchTeam',()=>{const g=getFamily(); g.activeTeam=g.activeTeam==='team1'?'team2':'team1'; emitState();});
+  socket.on('familyReset',()=>{resetScores(); resetPlayersGameData(); resetFamilyGame(true); state.app.selectedGame='family'; state.app.selectedGameLabel='فاميلي فيود'; state.app.currentView='game_selected'; state.app.statusText='تمت إعادة فاميلي فيود'; emitState();});
   socket.on('disconnect',()=>{state.hosts=state.hosts.filter(h=>h.socketId!==socket.id); state.lastActivityAt=Date.now(); if(state.hosts.length===0) maybeShowMainHostQr(); emitState();});
 }
 return { state, buildState, emitState, attachSocket };

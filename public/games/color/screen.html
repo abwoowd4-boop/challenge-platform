@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>شاشة عرض صيد اللون</title>
-<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/game-pro-fx.js"></script><script src="/gamefx.js"></script>
 <style>
 *{box-sizing:border-box} :root{--bg1:#07111f;--bg2:#122946;--muted:rgba(255,255,255,.76)}
 body{margin:0;width:100vw;height:100vh;overflow:hidden;color:#fff;font-family:Tahoma,Segoe UI,sans-serif;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2))}
@@ -22,7 +22,7 @@ body{margin:0;width:100vw;height:100vh;overflow:hidden;color:#fff;font-family:Ta
 #resultFlash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle, rgba(255,255,255,.18), transparent 55%);opacity:0;transition:opacity .35s ease;z-index:9998}
 @media (max-width:1380px){body{overflow:auto;height:auto}.wrap{height:auto;min-height:100vh}.layout{grid-template-columns:1fr}.list{max-height:none}.top{min-height:56px}}
 .timer.hot{color:#ff98ad;animation:timerPulse .8s ease-in-out infinite}</style>
-</head>
+<link rel="stylesheet" href="/game-pro-theme.css"></head>
 <body>
 <div class="wrap">
   <div class="top">

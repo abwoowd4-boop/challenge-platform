@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لاعب المافيا</title>
-<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/game-pro-fx.js"></script><script src="/gamefx.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;min-height:100vh;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,#07111f,#122946);display:flex;align-items:center;justify-content:center;padding:18px}
@@ -16,7 +16,7 @@ body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;min-height:100vh;color:#fff
 .infoCard{padding:16px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;overflow:hidden}.infoCard:before{content:"";position:absolute;inset:auto 0 0 0;height:2px;background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent)}
 .label{font-size:15px;color:rgba(255,255,255,.7);margin-bottom:8px}.value{font-size:26px;font-weight:900}.roleValue{color:#ffd166}.statusAlive{color:#47d98b}.statusDead{color:#ff8da1}.statusMuted{color:#ffd166}
 .infoCard.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(255,209,102,.10)}.heroTag.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 24px rgba(255,255,255,.12)}</style>
-</head>
+<link rel="stylesheet" href="/game-pro-theme.css"></head>
 <body>
 <div class="glass">
   <div class="heroTag">أنت داخل اللعبة</div>

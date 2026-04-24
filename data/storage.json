@@ -1,140 +1,60 @@
 {
   "users": [
     {
-      "name": "Test User",
-      "email": "test@example.com",
-      "passwordHash": "scrypt:318325ba25bb71c003a03525cef33d78:0b3a31af71f0bad382be985d9b337ee8433a4fe8982ae3f8967e878860e3f691ada7944a30d1102b996434ff9f89614c6a3044b7a2adc2964da36c10532bde0e",
-      "activated": true,
-      "roomId": "019745",
-      "activationCode": "DEMO-PRO-2026",
-      "plan": "pro",
-      "isActive": true,
-      "createdAt": 1776885634589,
-      "updatedAt": 1776885634678
-    },
-    {
       "name": "a",
       "email": "a",
-      "passwordHash": "scrypt:6249880a0489244035e7ade8cb04bbd9:935bcf45f68a503059d93cbe60156e70cfadf1e76d08540decf2b953812b085406c1e6b254da7df9ca05a7b84db00945427d8de3c030c855ffdc22f8ee2d2ad8",
+      "passwordHash": "scrypt:c4dd5052f293ae981be708c00961d9a7:d7798d827b093a2b182cf913e50bd8cde28181b849dede7ce95dcd1680fb2290ee77b16dbae23b1a14e230b410581ad4301ddd59dd684e78c0b26334143e4534",
       "activated": true,
-      "roomId": "7A15CD",
-      "activationCode": "PRO-WNNH-JMYJ",
+      "roomId": "3PUY",
+      "activationCode": "PRO-2GTY-SKA5",
       "plan": "pro",
       "isActive": true,
-      "createdAt": 1776896107071,
-      "updatedAt": 1776896152095
+      "createdAt": 1776982553092,
+      "updatedAt": 1776982553093
     }
   ],
   "activationCodes": [
     {
       "code": "DEMO-PRO-2026",
       "plan": "pro",
-      "used": true,
-      "usedBy": "test@example.com",
-      "usedAt": 1776885634660,
-      "createdAt": 1776885623434
+      "used": false,
+      "usedBy": "",
+      "usedAt": 0,
+      "createdAt": 1776982386235
     },
     {
-      "code": "PRO-WNNH-JMYJ",
+      "code": "PRO-2GTY-SKA5",
       "plan": "pro",
       "used": true,
       "usedBy": "a",
-      "usedAt": 1776896152085,
-      "createdAt": 1776896146865
+      "usedAt": 1776982553092,
+      "createdAt": 1776982553092
     }
   ],
   "roomDefinitions": [
     {
-      "roomId": "019745",
-      "ownerEmail": "test@example.com",
-      "label": "Test User",
+      "roomId": "7A15CD",
+      "ownerEmail": "",
+      "label": "7A15CD",
       "isPermanent": true,
-      "createdAt": 1776938122237,
-      "updatedAt": 1776979561585,
-      "lastOpenedAt": 1776979561585
+      "createdAt": 1776982489090,
+      "updatedAt": 1777006727026,
+      "lastOpenedAt": 1777006727026
     },
     {
-      "roomId": "7A15CD",
+      "roomId": "3PUY",
       "ownerEmail": "a",
       "label": "a",
       "isPermanent": true,
-      "createdAt": 1776938122238,
-      "updatedAt": 1776979627623,
-      "lastOpenedAt": 1776979627623
-    },
-    {
-      "roomId": "MST3",
-      "ownerEmail": "",
-      "label": "MST3",
-      "isPermanent": true,
-      "createdAt": 1776964729126,
-      "updatedAt": 1776965730751,
-      "lastOpenedAt": 1776965730751
+      "createdAt": 1776982553092,
+      "updatedAt": 1777033142004,
+      "lastOpenedAt": 1777033142004
     }
   ],
   "roomSnapshots": [
     {
-      "roomId": "019745",
-      "savedAt": 1776938122237,
-      "state": {
-        "teamNames": {
-          "team1": "الفريق الأحمر",
-          "team2": "الفريق الأزرق"
-        },
-        "app": {
-          "selectedGame": "",
-          "selectedGameLabel": "",
-          "currentView": "lobby",
-          "statusText": "بانتظار اختيار اللعبة",
-          "gamePhase": "",
-          "currentRound": 0,
-          "introDismissed": false,
-          "overlayState": {
-            "type": "none",
-            "url": ""
-          }
-        },
-        "games": {
-          "mafia": {
-            "settings": {
-              "mafiaCount": 1,
-              "investigationSeconds": 45,
-              "defenseSeconds": 30,
-              "enableMayor": false,
-              "enableSniper": false,
-              "enableRopePlayer": false,
-              "enableSilentMafia": false
-            }
-          },
-          "color": {
-            "settings": {
-              "rounds": 3,
-              "prepSeconds": 10,
-              "playSeconds": 20
-            },
-            "recentColors": []
-          },
-          "letters": {
-            "gridSize": 5,
-            "settings": {
-              "answerSeconds": 10,
-              "otherTeamSeconds": 7,
-              "frameTopBottom": "#62c924",
-              "frameSides": "#ff8a3d",
-              "team1Color": "#51c84d",
-              "team2Color": "#ff8a3d"
-            }
-          },
-          "outsider": {
-            "category": "اكلات",
-            "optionsCount": 8
-          }
-        }
-      }
-    },
-    {
-      "roomId": "7A15CD",
-      "savedAt": 1776979627623,
+      "roomId": "3PUY",
+      "savedAt": 1777033142004,
       "state": {
         "teamNames": {
           "team1": "الفريق الأحمر",
@@ -187,13 +107,18 @@
           "outsider": {
             "category": "اكلات",
             "optionsCount": 8
+          },
+          "family": {
+            "settings": {
+              "rounds": 5
+            }
           }
         }
       }
     },
     {
-      "roomId": "MST3",
-      "savedAt": 1776965730751,
+      "roomId": "7A15CD",
+      "savedAt": 1777006727026,
       "state": {
         "teamNames": {
           "team1": "الفريق الأحمر",
@@ -246,6 +171,11 @@
           "outsider": {
             "category": "اكلات",
             "optionsCount": 8
+          },
+          "family": {
+            "settings": {
+              "rounds": 5
+            }
           }
         }
       }

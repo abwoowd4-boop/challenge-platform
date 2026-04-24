@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة تحكم المافيا</title>
-<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/game-pro-fx.js"></script><script src="/gamefx.js"></script>
 <style>
 *{box-sizing:border-box}
 :root{
@@ -61,7 +61,7 @@ linear-gradient(135deg,var(--bg1),var(--bg2));}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
 @media (max-width:1100px){.players,.grid2,.row,.miniBadges{grid-template-columns:1fr}}
 .hero.live{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 44px rgba(255,209,102,.10)}.timer.hot{color:#ff8da1;animation:timePulse .8s ease-in-out infinite}@keyframes timePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}</style>
-</head>
+<link rel="stylesheet" href="/game-pro-theme.css"></head>
 <body>
 <div class="top"><div class="bar"><div class="side"><button class="iconBtn" onclick="toggleMenu()">☰</button></div><div class="title">لوحة تحكم المافيا</div><div class="side"></div></div></div>
 <div id="menuPanel" class="menuPanel glass hidden"><div class="menuBtns"><button id="resetBtn" class="btn full hidden" onclick="resetGame()">إعادة اللعبة</button><button class="btn ghost full" onclick="location.href=withRoom('/games/mafia/setup')">تعديل إعدادات اللعبة</button><button class="btn red full" onclick="exitGame()">الخروج من اللعبة</button></div></div>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تشغيل صيد اللون</title>
-<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/gamefx.js"></script>
+<script src="/socket.io/socket.io.js"></script><script src="/room-client.js"></script><script src="/game-pro-fx.js"></script><script src="/gamefx.js"></script>
 <style>
 *{box-sizing:border-box} :root{--bg1:#07111f;--bg2:#122946;--glass:rgba(255,255,255,.10);--border:rgba(255,255,255,.14);--muted:rgba(255,255,255,.74);--good:#22c55e;--warn:#f59e0b;--bad:#ef476f;--blue:#4f7cff}
 body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;background:radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2));min-height:100vh}
@@ -18,7 +18,7 @@ body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;background:radia
 .podium{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:12px;align-items:end;margin-top:16px}.pod{padding:18px 14px;border-radius:22px;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.pod.first{min-height:180px;background:linear-gradient(180deg, rgba(255,209,102,.26), rgba(255,255,255,.06))}.pod.second{min-height:140px}.pod.third{min-height:120px}.pod .rank{font-size:30px;font-weight:900}.pod .pname{margin-top:10px;font-size:18px;font-weight:900}.pod .pts{margin-top:6px;color:rgba(255,255,255,.75)}
 @media (max-width:1050px){.hero,.grid{grid-template-columns:1fr}} @media (max-width:640px){.bar{grid-template-columns:56px 1fr 56px}.title{font-size:24px}.page{padding:14px}}
 .timer.hot{color:#ff8da1;animation:timePulse .8s ease-in-out infinite}.heroMain.live{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 40px rgba(79,124,255,.20)}body.hotTime{background:radial-gradient(circle at center, rgba(239,71,111,.16), transparent 34%),radial-gradient(circle at top right, rgba(91,160,255,.18), transparent 30%),radial-gradient(circle at top left, rgba(255,118,146,.14), transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2))}@keyframes timePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}</style>
-</head>
+<link rel="stylesheet" href="/game-pro-theme.css"></head>
 <body>
 <div class="top"><div class="bar"><button class="iconBtn" onclick="toggleMenu()">☰</button><div class="title">تشغيل صيد اللون</div><div></div></div></div>
 <div id="menuPanel" class="menuPanel glass hidden"><div class="menuBtns"><button class="btn red full" onclick="socket.emit('colorReset')">إعادة اللعبة</button><button class="btn ghost full" onclick="location.href=withRoom('/games/color/setup')">إعدادات اللعبة</button><button class="btn red full" onclick="exitGame()">الخروج من اللعبة</button></div></div>
