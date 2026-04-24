@@ -47,14 +47,14 @@
       "label": "a",
       "isPermanent": true,
       "createdAt": 1776982553092,
-      "updatedAt": 1777033142004,
-      "lastOpenedAt": 1777033142004
+      "updatedAt": 1777040234899,
+      "lastOpenedAt": 1777040234899
     }
   ],
   "roomSnapshots": [
     {
       "roomId": "3PUY",
-      "savedAt": 1777033142004,
+      "savedAt": 1777040234899,
       "state": {
         "teamNames": {
           "team1": "الفريق الأحمر",
@@ -101,7 +101,9 @@
               "frameTopBottom": "#62c924",
               "frameSides": "#ff8a3d",
               "team1Color": "#51c84d",
-              "team2Color": "#ff8a3d"
+              "team2Color": "#ff8a3d",
+              "questionMode": "bank",
+              "useQuestionBank": true
             }
           },
           "outsider": {

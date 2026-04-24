@@ -18,13 +18,42 @@
       state.prev=s;
     }catch(e){ state.prev=s; }
   }
+  function positionMenuPanel(trigger){
+    const panel=document.querySelector(".menuPanel");
+    if(!panel) return;
+    const btn=trigger?.closest?.(".iconBtn,.menu-btn,[onclick*=\"toggleMenu\"]") || document.querySelector(".top .iconBtn,.topbar .iconBtn,.appbar .iconBtn,.header .iconBtn,.game-header .iconBtn,.menu-btn,[onclick*=\"toggleMenu\"]");
+    const bar=document.querySelector(".top,.topbar,.appbar,.header,.game-header");
+    const rect=(btn||bar)?.getBoundingClientRect?.();
+    const barRect=bar?.getBoundingClientRect?.();
+    const top=Math.max(8, Math.round(((barRect?.bottom) || (rect?.bottom) || 64) + 8));
+    let right=18;
+    if(rect){ right=Math.max(10, Math.round(window.innerWidth - rect.right)); }
+    panel.style.setProperty("--menu-top", top+"px");
+    panel.style.setProperty("--menu-right", right+"px");
+  }
+  function installSmartMenu(){
+    const triggers='.iconBtn,.menu-btn,.back,[onclick*="toggleMenu"],[data-menu-toggle]';
+    const reposition=(target)=>requestAnimationFrame(()=>positionMenuPanel(target));
+    document.addEventListener('click',e=>{ if(e.target.closest(triggers)) reposition(e.target); }, true);
+    window.addEventListener('scroll',()=>positionMenuPanel(),{passive:true});
+    window.addEventListener('resize',()=>positionMenuPanel(),{passive:true});
+    setTimeout(()=>{
+      if(typeof window.toggleMenu==='function' && !window.toggleMenu.__proWrapped){
+        const original=window.toggleMenu;
+        window.toggleMenu=function(){ const r=original.apply(this,arguments); reposition(document.activeElement); return r; };
+        window.toggleMenu.__proWrapped=true;
+      }
+    },0);
+    setInterval(()=>{ const p=document.querySelector('.menuPanel:not(.hidden),#menuPanel:not(.hidden)'); if(p) positionMenuPanel(); },350);
+  }
+
   function installAudioButton(){ if(document.getElementById('proAudioBtn')) return; const b=document.createElement('button'); b.id='proAudioBtn'; b.className='pro-audio-btn'; b.type='button'; b.textContent='🔇 تفعيل الصوت'; b.addEventListener('click',enable); document.body.appendChild(b); }
-  function boot(){ document.body.classList.add('pro-page-enter'); installAudioButton(); setTimeout(()=>flashSelector('.card,.glass,.panel,.team,.game-card'),250); if(window.io){ const oldOne=window.Socket&&window.Socket.prototype; }
+  function boot(){ document.body.classList.add('pro-page-enter'); installAudioButton(); installSmartMenu(); setTimeout(()=>flashSelector('.card,.glass,.panel,.team,.game-card'),250); if(window.io){ const oldOne=window.Socket&&window.Socket.prototype; }
     // Hook the common socket variable when pages define it globally. Also monkey-patch emit/listen safely through createRoomSocket.
     if(window.createRoomSocket && !window.createRoomSocket.__proWrapped){ const original=window.createRoomSocket; window.createRoomSocket=function(){ const sock=original.apply(this,arguments); attach(sock); return sock; }; window.createRoomSocket.__proWrapped=true; }
     if(window.socket) attach(window.socket);
   }
   function attach(sock){ if(!sock||sock.__proFxAttached) return; sock.__proFxAttached=true; sock.on('stateUpdate',handleState); sock.on('familyStrikeFlash',()=>play('wrong')); sock.on('feud:strike',()=>play('wrong')); sock.on('colorStartRound',()=>play('round')); sock.on('lettersBuzz',()=>play('start')); sock.on('gameEnded',()=>play('win')); sock.on('connect',()=>toast('متصل')) }
-  window.GameProFX={enable,play,toast,banner,confetti,attach};
+  window.GameProFX={enable,play,toast,banner,confetti,attach,positionMenuPanel};
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();

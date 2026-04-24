@@ -351,7 +351,9 @@ function sanitizeRoomSnapshot(snapshot={}){
     frameTopBottom:'#62c924',
     frameSides:'#ff8a3d',
     team1Color:'#51c84d',
-    team2Color:'#ff8a3d'
+    team2Color:'#ff8a3d',
+    questionMode:'bank',
+    useQuestionBank:true
   };
   const defaultOutsiderCategory='اكلات';
   const defaultOutsiderOptionsCount=8;
@@ -653,7 +655,7 @@ function defaultLettersState(size=5){
     phaseLabel:'التجهيز',
     statusText:'بانتظار تجهيز لعبة الحروف',
     gridSize:safeSize,
-    settings:{answerSeconds:10,otherTeamSeconds:7,frameTopBottom:'#62c924',frameSides:'#ff8a3d',team1Color:'#51c84d',team2Color:'#ff8a3d'},
+    settings:{answerSeconds:10,otherTeamSeconds:7,frameTopBottom:'#62c924',frameSides:'#ff8a3d',team1Color:'#51c84d',team2Color:'#ff8a3d',questionMode:'bank',useQuestionBank:true},
     grid:generateLettersGrid(safeSize),
     owners:Array.from({length:safeSize},()=>Array.from({length:safeSize},()=>'')),
     currentLetter:'',
@@ -671,7 +673,8 @@ function defaultLettersState(size=5){
     currentAnswerTeam:'',
     waitingTeam:'',
     noticeText:'بانتظار بداية اللعبة',
-    presentedQuestion:null
+    presentedQuestion:null,
+    wrongFlash:null
   };
 }
 
@@ -1266,11 +1269,14 @@ function sendLettersChanceToOtherTeam(message=''){
 function markLettersWrong(){
   const letters=getLetters();
   if(letters.phase!=='running' || letters.winnerTeam) return {ok:false,message:'اللعبة غير نشطة'};
+  const wrongName=letters.currentResponderName||'الإجابة';
+  const wrongTeam=letters.currentResponderTeam||letters.currentAnswerTeam||'';
+  letters.wrongFlash={id:Date.now(),name:wrongName,team:wrongTeam,message:`إجابة ${wrongName} غير صحيحة`};
   if(letters.answerStage==='primary'){
-    sendLettersChanceToOtherTeam(`إجابة ${letters.currentResponderName||'اللاعب'} غير صحيحة - الفرصة للفريق الآخر`);
+    sendLettersChanceToOtherTeam(`إجابة ${wrongName||'اللاعب'} غير صحيحة - الفرصة للفريق الآخر`);
     return {ok:true};
   }
-  reopenLettersBuzz(`إجابة ${letters.currentResponderName||'الفريق'} غير صحيحة - الزر مفتوح للجميع`);
+  reopenLettersBuzz(`إجابة ${wrongName||'الفريق'} غير صحيحة - الزر مفتوح للجميع`);
   return {ok:true};
 }
 function lettersPhaseLabel(phase='setup'){
@@ -1288,7 +1294,9 @@ function resetLettersGame(){
     frameTopBottom:prev.settings?.frameTopBottom||'#62c924',
     frameSides:prev.settings?.frameSides||'#ff8a3d',
     team1Color:prev.settings?.team1Color||'#51c84d',
-    team2Color:prev.settings?.team2Color||'#7a57d1'
+    team2Color:prev.settings?.team2Color||'#7a57d1',
+    questionMode:prev.settings?.questionMode||'bank',
+    useQuestionBank:prev.settings?.useQuestionBank!==false
   };
 }
 function updateLettersSettings(config={}){
@@ -1304,6 +1312,8 @@ function updateLettersSettings(config={}){
   letters.settings.frameSides=String(config.frameSides||letters.settings.frameSides||'#ff8a3d');
   letters.settings.team1Color=String(config.team1Color||letters.settings.team1Color||'#51c84d');
   letters.settings.team2Color=String(config.team2Color||letters.settings.team2Color||'#7a57d1');
+  letters.settings.questionMode=String(config.questionMode||letters.settings.questionMode||'bank');
+  letters.settings.useQuestionBank = (config.useQuestionBank===false || letters.settings.questionMode==='external') ? false : true;
   letters.statusText='تم حفظ إعدادات لعبة الحروف';
   updateLettersNotice();
 }
