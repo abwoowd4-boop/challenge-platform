@@ -774,7 +774,20 @@ function sanitizeColorSubmissions(items=[]){
     points:Number(s.points)||0
   }));
 }
+function ensureLettersBoardInvariant(){
+  const letters=state.games?.letters;
+  if(!letters) return;
+  const size=Math.max(3, Math.min(5, Number(letters.gridSize)||5));
+  letters.gridSize=size;
+  if(!Array.isArray(letters.grid) || letters.grid.length!==size || letters.grid.some(row=>!Array.isArray(row)||row.length!==size)){ letters.grid=generateLettersGrid(size); }
+  if(!Array.isArray(letters.owners) || letters.owners.length!==size || letters.owners.some(row=>!Array.isArray(row)||row.length!==size)){
+    const old=Array.isArray(letters.owners)?letters.owners:[];
+    letters.owners=Array.from({length:size},(_,r)=>Array.from({length:size},(_,c)=>{ const v=old?.[r]?.[c]||""; return (v==="team1"||v==="team2")?v:""; }));
+  }
+  letters.winningPath=Array.isArray(letters.winningPath)?letters.winningPath:[];
+}
 function buildPublicGamesState(){
+  ensureLettersBoardInvariant();
   return {
     ...state.games,
     color:{
@@ -1524,6 +1537,7 @@ function adjustLettersCellOwner({row,col,team}={}){
     state.app.statusText=letters.statusText;
   }
   emitState();
+  io.to(roomCode).emit("lettersBoardUpdate",{grid:letters.grid,owners:letters.owners,gridSize:letters.gridSize,winningPath:letters.winningPath||[],winnerTeam:letters.winnerTeam||"",currentLetter:letters.currentLetter||""});
   return {ok:true};
 }
 function claimLettersCell({row,col,team}={}){
@@ -1556,7 +1570,18 @@ function claimLettersCell({row,col,team}={}){
     reopenLettersBuzz(`تم حجز الخلية للفريق ${state.teamNames[teamKey]||teamKey} - الزر مفتوح للجميع`);
   }
   letters.currentLetter='';
+  if(lettersPresentedQuestionTimeout){ clearTimeout(lettersPresentedQuestionTimeout); lettersPresentedQuestionTimeout=null; }
+  if(letters.presentedQuestion){
+    letters.presentedQuestion={...letters.presentedQuestion, autoHideAt:Date.now()+5000};
+    lettersPresentedQuestionTimeout=setTimeout(()=>{
+      const l=getLetters();
+      l.presentedQuestion=null;
+      lettersPresentedQuestionTimeout=null;
+      emitState();
+    },5000);
+  }
   emitState();
+  io.to(roomCode).emit("lettersBoardUpdate",{grid:letters.grid,owners:letters.owners,gridSize:letters.gridSize,winningPath:letters.winningPath||[],winnerTeam:letters.winnerTeam||"",currentLetter:letters.currentLetter||""});
   return {ok:true};
 }
 function resetScores(){state.teamScores={team1:0,team2:0}; state.playerScores={}; state.players.forEach(p=>{state.playerScores[p.name]=0;});}
@@ -1844,6 +1869,7 @@ socket.emit('stateUpdate',buildState());
   socket.on('forceLobbyView',()=>{ state.app.selectedGame=''; state.app.selectedGameLabel=''; state.app.currentView='lobby'; state.app.statusText='بانتظار دخول اللاعبين'; state.app.gamePhase=''; state.app.currentRound=0; state.app.introDismissed=true; hideOverlay(); emitState(); });
 
   socket.on('selectGame',({gameKey,gameLabel}={})=>{state.app.selectedGame=gameKey||''; state.app.selectedGameLabel=gameLabel||''; state.app.currentView='game_selected'; state.app.statusText=gameLabel?`تم اختيار ${gameLabel}`:'تم اختيار اللعبة'; state.app.gamePhase=''; state.app.currentRound=0; state.app.introDismissed=true; hideOverlay(); resetPlayersGameData(); resetScores(); if(gameKey==='mafia') resetMafiaGame(); if(gameKey==='color') resetColorGame(); if(gameKey==='letters') resetLettersGame(); if(gameKey==='outsider') resetOutsiderGame(true); if(gameKey==='family') resetFamilyGame(true); emitState();});
+  socket.on('mafiaPrime',()=>{state.app.selectedGame='mafia'; state.app.selectedGameLabel='لعبة المافيا'; if(!state.app.currentView||state.app.currentView==='lobby') state.app.currentView='game_selected'; state.app.statusText=state.app.statusText||'تم اختيار لعبة المافيا'; emitState();});
   socket.on('clearSelectedGame',()=>{state.app.selectedGame=''; state.app.selectedGameLabel=''; state.app.currentView='lobby'; state.app.statusText='بانتظار اختيار اللعبة'; state.app.gamePhase=''; state.app.currentRound=0; emitState();});
   socket.on('renameTeam',({teamKey,teamName}={})=>{if(!teamKey||!state.teamNames[teamKey]) return; const safeTeamName=String(teamName||'').trim(); if(!safeTeamName) return; state.teamNames[teamKey]=safeTeamName; emitState();});
   socket.on('assignPlayerTeam',({playerId,team}={})=>{const player=state.players.find(p=>p.playerId===playerId); if(!player) return; if(!['team1','team2',''].includes(team)) return; player.team=team||''; emitState();});
@@ -1897,7 +1923,7 @@ socket.emit('stateUpdate',buildState());
   socket.on('colorFinishReview',()=>{finishColorReview();});
   socket.on('colorReset',()=>{resetScores(); resetPlayersGameData(); resetColorGame(); state.app.selectedGame='color'; state.app.selectedGameLabel='صيد اللون'; state.app.currentView='game_selected'; state.app.statusText='تم تصفير صيد اللون'; emitState();});
 socket.on('lettersPrime',()=>{state.app.selectedGame='letters'; state.app.selectedGameLabel='لعبة الحروف'; if(!state.app.currentView||state.app.currentView==='lobby') state.app.currentView='game_selected'; emitState();});
-  socket.on('lettersUpdateConfig',(config={})=>{updateLettersSettings(config); emitState();});
+  socket.on('lettersUpdateConfig',(config={},ack)=>{updateLettersSettings(config); emitState(); if(typeof ack==='function') ack({ok:true,settings:getLetters().settings,gridSize:getLetters().gridSize});});
   socket.on('lettersStart',()=>{startLettersGame();});
   socket.on('lettersSetCurrentLetter',({letter}={})=>{setLettersCurrentLetter(letter);});
   socket.on('lettersPresentQuestion',(payload={})=>{presentLettersQuestion(payload);});

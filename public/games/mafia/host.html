@@ -60,7 +60,7 @@ linear-gradient(135deg,var(--bg1),var(--bg2));}
 .pulse{animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
 @media (max-width:1100px){.players,.grid2,.row,.miniBadges{grid-template-columns:1fr}}
-.hero.live{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 44px rgba(255,209,102,.10)}.timer.hot{color:#ff8da1;animation:timePulse .8s ease-in-out infinite}@keyframes timePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}</style>
+.hero.live{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 44px rgba(255,209,102,.10)}.timer.hot{color:#ff8da1;animation:timePulse .8s ease-in-out infinite}@keyframes timePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}.nightStep{display:none}.nightStep.active{display:block}.stepTitle{font-size:30px;font-weight:900;margin-bottom:10px}.stepPlayers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}.stepPlayer{padding:14px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:900}.stepNav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:800px){.stepPlayers{grid-template-columns:1fr}}</style>
 <link rel="stylesheet" href="/game-pro-theme.css"></head>
 <body>
 <div class="top"><div class="bar"><div class="side"><button class="iconBtn" onclick="toggleMenu()">☰</button></div><div class="title">لوحة تحكم المافيا</div><div class="side"></div></div></div>
@@ -75,7 +75,10 @@ linear-gradient(135deg,var(--bg1),var(--bg2));}
     <div class="glass hero sectionGlow"><div id="phaseTitle" class="big pulse">ليل 1</div><div id="timerText" class="timer">—</div><div id="phaseNote" class="note">بانتظار مجريات الجولة.</div></div>
 
     <div id="nightSection" class="grid2 hidden">
-      <div class="glass card sectionGlow"><h2 class="h2">اختيارات الليل</h2><div class="sub">اختر نتائج الليل ثم اضغط إنهاء الليل.</div><div id="mafiaNamesNote" class="note" style="margin-top:12px">أسماء المافيا: —</div><div style="margin-top:8px">من أغتالته المافيا</div><select id="mafiaKillId" class="select"></select><div style="margin-top:10px">من حماه الدكتور</div><select id="doctorSaveId" class="select"></select><div style="margin-top:10px">من سأل عنه المحقق</div><select id="detectiveCheckId" class="select"></select><div id="silentWrap" class="hidden"><div style="margin-top:10px">من سكتته مافيا التسكيت</div><select id="silentTargetId" class="select"></select></div><div id="sniperWrap" class="hidden"><div style="margin-top:10px">من اختاره القناص</div><select id="sniperKillId" class="select"></select></div><div class="row" style="margin-top:14px"><button class="btn green" onclick="endNight()">إنهاء الليل</button><button class="btn red" onclick="skipRound()">تخطي الجولة</button></div></div>
+      <div class="glass card sectionGlow"><h2 class="h2">اختيارات الليل خطوة بخطوة</h2><div class="sub">كل دور يظهر في صفحة واضحة، اختر الاسم ثم انتقل للخطوة التالية.</div><div id="mafiaNamesNote" class="note" style="margin-top:12px">أسماء المافيا: —</div>
+        <div id="nightWizard"></div>
+        <select id="mafiaKillId" class="select hidden"></select><select id="doctorSaveId" class="select hidden"></select><select id="detectiveCheckId" class="select hidden"></select><select id="silentTargetId" class="select hidden"></select><select id="sniperKillId" class="select hidden"></select>
+        <div class="row" style="margin-top:14px"><button class="btn green" onclick="endNight()">حفظ اختيارات الليل وإنهاء الليل</button><button class="btn red" onclick="skipRound()">تخطي الجولة</button></div></div>
       <div class="glass card sectionGlow"><h2 class="h2">اللاعبون وأدوارهم</h2><div id="nightPlayers" class="players"></div></div>
     </div>
 
@@ -98,8 +101,8 @@ linear-gradient(135deg,var(--bg1),var(--bg2));}
 <script>
 const socket=createRoomSocket();
 socket.emit('registerHost',{page:'mafia-host'});
-socket.emit('selectGame',{gameKey:'mafia',gameLabel:'لعبة المافيا'});
-let autoMovedToVote=false;
+socket.emit('mafiaPrime');
+let autoMovedToVote=false; let nightStepIndex=0; let currentNightSteps=[];
 function toggleMenu(){document.getElementById('menuPanel').classList.toggle('hidden')}
 document.addEventListener('click',(e)=>{const p=document.getElementById('menuPanel');if(!p.classList.contains('hidden')&&!p.contains(e.target)&&!e.target.closest('.iconBtn'))p.classList.add('hidden');});
 document.addEventListener('click',(e)=>{ if(e.target.closest('.btn')||e.target.closest('.iconBtn')) GameFX.click(); });
@@ -115,7 +118,28 @@ function playerCard(p){return `<div class="player ${!p.isAlive?'dead':''}"><div 
 function hideSections(){['nightSection','daySection','investigationSection','votingSection','defenseSection','ropeSection','endSection'].forEach(id=>{const el=document.getElementById(id); if(el) el.classList.add('hidden')})}
 function assignRoles(){socket.emit('mafiaAssignRoles')}
 function startGame(){socket.emit('mafiaStartNight')}
-function endNight(){['mafiaKillId','doctorSaveId','detectiveCheckId','silentTargetId','sniperKillId'].forEach(key=>{const el=document.getElementById(key);socket.emit('mafiaSetNightAction',{actionKey:key,playerId:el?el.value:''});});socket.emit('mafiaStartDay')}
+
+function playerOptionsHtml(players, actionKey){
+  const mafiaIds=new Set(players.filter(p=>['mafia','silentMafia'].includes(p.role)).map(p=>p.playerId));
+  let list=players.filter(p=>p.isAlive);
+  if(actionKey==='mafiaKillId' || actionKey==='silentTargetId') list=list.filter(p=>!mafiaIds.has(p.playerId));
+  return '<option value="">— بدون اختيار —</option>'+list.map(p=>`<option value="${p.playerId}">${esc(p.name)}</option>`).join('');
+}
+function buildNightSteps(mafia, players){
+  const steps=[{key:'mafiaKillId',title:'من اغتالت المافيا؟',hint:'اختر اللاعب الذي قررت المافيا اغتياله هذه الليلة.'},{key:'doctorSaveId',title:'من حماه الدكتور؟',hint:'اختر اللاعب الذي قرر الدكتور حمايته.'},{key:'detectiveCheckId',title:'من فحصه المحقق؟',hint:'اختر اللاعب الذي يريد المحقق معرفة دوره.'}];
+  if(mafia.settings?.enableSilentMafia) steps.push({key:'silentTargetId',title:'من سكتته مافيا التسكيت؟',hint:'اختر اللاعب الذي سيتم منعه من الكلام.'});
+  if(mafia.settings?.enableSniper && !mafia.sniperUsed) steps.push({key:'sniperKillId',title:'من اختاره القناص؟',hint:'اختياري: اختر هدف القناص إذا استخدم قدرته.'});
+  currentNightSteps=steps; if(nightStepIndex>=steps.length) nightStepIndex=steps.length-1; if(nightStepIndex<0) nightStepIndex=0;
+  const step=steps[nightStepIndex]||steps[0];
+  const saved=(mafia.nightActions||{})[step.key]||'';
+  nightWizard.innerHTML=`<div class="nightStep active"><div class="stepTitle">${step.title}</div><div class="sub">${step.hint}</div><select id="nightStepSelect" class="select">${playerOptionsHtml(players, step.key)}</select><div class="stepPlayers">${players.filter(p=>p.isAlive).map(p=>`<div class="stepPlayer">${esc(p.name)}<div class="meta">${esc(roleLabel(p.role))}</div></div>`).join('')}</div><div class="stepNav"><button class="btn ghost" onclick="prevNightStep()">السابق</button><button class="btn" onclick="nextNightStep()">التالي</button></div><div class="note">الخطوة ${nightStepIndex+1} من ${steps.length}</div></div>`;
+  const sel=document.getElementById('nightStepSelect'); if(sel){sel.value=saved; sel.onchange=()=>{const hidden=document.getElementById(step.key); if(hidden) hidden.value=sel.value; socket.emit('mafiaSetNightAction',{actionKey:step.key,playerId:sel.value});}; const hidden=document.getElementById(step.key); if(hidden) hidden.value=saved;}
+}
+function saveCurrentNightStep(){const step=currentNightSteps[nightStepIndex]; const sel=document.getElementById('nightStepSelect'); if(step&&sel){const hidden=document.getElementById(step.key); if(hidden) hidden.value=sel.value; socket.emit('mafiaSetNightAction',{actionKey:step.key,playerId:sel.value});}}
+function nextNightStep(){saveCurrentNightStep(); if(nightStepIndex<currentNightSteps.length-1) nightStepIndex++; if(window.lastMafiaRender) buildNightSteps(window.lastMafiaRender.mafia, window.lastMafiaRender.players);}
+function prevNightStep(){saveCurrentNightStep(); if(nightStepIndex>0) nightStepIndex--; if(window.lastMafiaRender) buildNightSteps(window.lastMafiaRender.mafia, window.lastMafiaRender.players);}
+
+function endNight(){saveCurrentNightStep();['mafiaKillId','doctorSaveId','detectiveCheckId','silentTargetId','sniperKillId'].forEach(key=>{const el=document.getElementById(key);socket.emit('mafiaSetNightAction',{actionKey:key,playerId:el?el.value:''});});socket.emit('mafiaStartDay')}
 function startInvestigation(){autoMovedToVote=false; socket.emit('mafiaStartInvestigation')}
 function confirmVote(){const id=document.getElementById('voteSelectedPlayerId').value;if(!id) return;socket.emit('mafiaSelectVoteTarget',{playerId:id});document.getElementById('selectedVoteNote').textContent='تم اختيار اللاعب. يمكنك الآن بدء وقت التبرير.';}
 function startDefense(){const id=document.getElementById('voteSelectedPlayerId').value;if(!id) return;autoMovedToVote=true;socket.emit('mafiaSelectVoteTarget',{playerId:id});setTimeout(()=>socket.emit('mafiaOpenDefense'),80)}
@@ -128,7 +152,7 @@ function exitGame(){ socket.emit('exitGameToTeams'); document.getElementById('me
 
 socket.on('stateUpdate',(state)=>{
   const mafia=(state.games||{}).mafia||{};
-  const players=state.players||[];
+  const players=state.players||[]; window.lastMafiaRender={mafia,players};
   const started=!!mafia.started;
   const winner=mafia.winner||'';
   document.getElementById('resetBtn').classList.toggle('hidden', !started);
@@ -155,17 +179,21 @@ socket.on('stateUpdate',(state)=>{
   fillSelect('voteSelectedPlayerId',players,true);
   const votedId=(mafia.voteResult||{}).selectedPlayerId||'';
   document.getElementById('ropePullTargetId').innerHTML='<option value="">—</option>'+players.filter(p=>p.isAlive && p.playerId!==votedId).map(p=>`<option value="${p.playerId}">${esc(p.name)}</option>`).join('');
-  document.getElementById('silentWrap').classList.toggle('hidden', !mafia.settings?.enableSilentMafia);
-  document.getElementById('sniperWrap').classList.toggle('hidden', !mafia.settings?.enableSniper || !!mafia.sniperUsed);
   if(winner){
     document.getElementById('endSection').classList.remove('hidden');
     document.getElementById('endTitle').textContent = winner==='mafia' ? 'انتهت اللعبة - فازت المافيا' : 'انتهت اللعبة - فاز المواطنون';
     document.getElementById('endNote').textContent = 'يمكنك إعادة اللعبة أو الخروج من اللعبة.';
     return;
   }
-  if(phase==='night'){
+  if(phase==='roles_assigned' || phase==='setup'){
     document.getElementById('nightSection').classList.remove('hidden');
     document.getElementById('nightPlayers').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+    document.getElementById('nightWizard').innerHTML='<div class="note">تم توزيع الأدوار. اضغط زر بدء اللعبة من قسم التحكم قبل البداية إذا لم تبدأ بعد.</div>';
+    document.getElementById('phaseNote').textContent='الأدوار موزعة، بانتظار بدء الليل.';
+  } else if(phase==='night'){
+    document.getElementById('nightSection').classList.remove('hidden');
+    document.getElementById('nightPlayers').innerHTML=players.length?players.map(playerCard).join(''):'<div class="player">لا يوجد لاعبون</div>';
+    buildNightSteps(mafia,players);
     const mafiaPlayers=players.filter(p=>['mafia','silentMafia'].includes(p.role));
     document.getElementById('mafiaNamesNote').textContent='أسماء المافيا: '+(mafiaPlayers.length?mafiaPlayers.map(p=>p.name).join(' - '):'—');
     document.getElementById('phaseNote').textContent='حل الليل. حدد نتائج الأدوار ثم اضغط إنهاء الليل.';

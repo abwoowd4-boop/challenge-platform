@@ -52,7 +52,7 @@ body{margin:0;font-family:Tahoma,Segoe UI,sans-serif;color:#fff;height:100vh;ove
 <script>
 const socket=createRoomSocket(); socket.emit('screenReady'); socket.emit('lettersPrime');
 const questionOverlay=document.getElementById('questionOverlay'); const questionStagePrompt=document.getElementById('questionStagePrompt'); const questionStageLetter=document.getElementById('questionStageLetter'); const questionStageAnswer=document.getElementById('questionStageAnswer');
-let lastWinnerTeam='',lastTimerValue=null,lastResponderId='',lastPhase='',lastCurrentLetter='',lastOwnersFlat='',lastRoundNo=null; let countdownRunning=false;
+let lastWinnerTeam='',lastTimerValue=null,lastResponderId='',lastPhase='',lastCurrentLetter='',lastOwnersFlat='',lastRoundNo=null,lastShownQuestionKey='',lastWrongFlashId=''; let countdownRunning=false;
 const STAGES=['setup','letter','buzz','primary','secondary','claim'];
 function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function flowStage(letters){ if(letters.winnerTeam) return 'claim'; if(letters.phase!=='running') return 'setup'; if(!letters.currentLetter) return 'letter'; if(letters.answerStage==='primary' && letters.currentResponderId) return 'primary'; if(letters.answerStage==='secondary') return letters.currentResponderId?'primary':'secondary'; return 'buzz'; }
